@@ -66,7 +66,10 @@ npm run test:coverage                 # Coverage report (target >80%)
   /ai               — matching logic + eval logging
   /validations      — Zod schemas (single source of truth)
 /types              — shared TypeScript types
-/docs               — PRD.md, API.md
+/docs
+  /sessions         — session logs (EXPLORE_*, PLAN_*, IMPLEMENT_*)
+  PRD.md            — product requirements
+  API.md            — API documentation
 ```
 
 ---
@@ -114,6 +117,55 @@ Judge prompt: _"Given this parent's needs and these teachers, is the ranking rea
 
 **Testing:** TDD — write tests first · Vitest for unit/integration · Playwright for E2E · Mock all Supabase + AI calls · >80% coverage enforced via CI
 
+**TDD Workflow:**
+
+1. **RED Phase:** Write failing tests first in a single commit
+   - Run tests to confirm they fail (Confirm RED state)
+   - Commit: `test(RED): add failing tests for [feature]`
+2. **GREEN Phase:** Implement minimum code to pass each test
+   - One commit per logical feature/test group
+   - Commit: `feat(GREEN): implement [feature]`
+3. **REFACTOR Phase:** Improve code quality without changing behavior
+   - Commit: `refactor(REFACTOR): [improvement]`
+
+**Property-Based Testing:**
+
+- For complex logic (AI ranking, date validation, permissions), prefer `fast-check` over example-based tests
+- Property tests generate 100+ random inputs to discover edge cases humans miss
+- Example: Date validation found `NaN` edge case via `fc.date()`
+
+---
+
+## Session Logging Workflow
+
+Document complex work sessions to maintain project knowledge and enable context recovery.
+
+**When to log:**
+
+- After completing exploration of unfamiliar codebase areas
+- After finalizing implementation plans before coding
+- After major feature implementations with course corrections
+- Before running `/compact` when context becomes full
+
+**Logging format:**
+
+- **Explore Phase:** Save summary to `docs/sessions/EXPLORE_[task].md`
+  - Findings, architectural decisions, next steps
+- **Plan Phase:** Save approved plan to `docs/sessions/PLAN_[task].md`
+  - Requirements, design decisions, implementation steps
+- **Implementation:** Save to `docs/sessions/IMPLEMENT_[date]_[task].md`
+  - What was built, key decisions, course corrections, lessons learned
+  - Git commit history, test results, dependencies added
+  - Next session recommendations
+
+**Context management:**
+
+- If context becomes full during exploration, suggest `/compact` and summarize findings to file
+- For large features, use Document-then-Implement workflow:
+  1. Write design to `docs/sessions/PLAN_[task].md`
+  2. Execute `/clear` to reset context
+  3. Re-read plan file to start implementation with clean context
+
 ---
 
 ## CI/CD
@@ -148,6 +200,28 @@ Branch protection enforced. Secrets in GitHub Actions + Vercel dashboard only �
 
 ## Do's and Don'ts
 
-✅ Use Shadcn before custom UI · Log all `/api/match` I/O to `match_evals` · Cache search with Redis · Store secrets in GitHub/Vercel env only · Fix High/Critical security findings before merge
+✅ **Do:**
 
-🚫 AI calls from client · Skip RLS · Use `any` · Magic link/OAuth · Commit `.env*` files · Expose internal errors · Merge with open security findings
+- Use Shadcn before custom UI
+- Log all `/api/match` I/O to `match_evals`
+- Cache search results with Redis (5min TTL)
+- Store secrets in GitHub/Vercel env only
+- Fix High/Critical security findings before merge
+- **Run existing related tests and confirm RED state before implementing**
+- **Write tests BEFORE implementation (strict TDD)**
+- **Use `fast-check` for complex logic (AI ranking, validation, permissions)**
+- **Document complex sessions to `docs/sessions/` before `/compact` or `/clear`**
+- **Suggest `/compact` proactively after complex exploration phases**
+
+🚫 **Don't:**
+
+- AI calls from client
+- Skip RLS policies
+- Use `any` in TypeScript
+- Magic link/OAuth (email+password only)
+- Commit `.env*` files
+- Expose internal errors or stack traces
+- Merge with open security findings
+- **Write business logic without corresponding test cases**
+- **Skip RED confirmation before GREEN implementation**
+- **Use only example-based tests for complex validation logic**
