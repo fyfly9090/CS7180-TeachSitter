@@ -115,56 +115,19 @@ Judge prompt: _"Given this parent's needs and these teachers, is the ranking rea
 
 **Git:** Branches `feature/[issue-id]-[slug]` · Commits `feat: #[id] desc` · PRs use "Closes #[id]" · Never push to `main` directly
 
-**Testing:** TDD — write tests first · Vitest for unit/integration · Playwright for E2E · Mock all Supabase + AI calls · >80% coverage enforced via CI
+**Testing:** TDD (write tests first) · Vitest for unit/integration · Playwright for E2E · Mock all Supabase + AI calls · >80% coverage via CI · Use `fast-check` for complex logic (AI ranking, validation, permissions)
 
-**TDD Workflow:**
-
-1. **RED Phase:** Write failing tests first in a single commit
-   - Run tests to confirm they fail (Confirm RED state)
-   - Commit: `test(RED): add failing tests for [feature]`
-2. **GREEN Phase:** Implement minimum code to pass each test
-   - One commit per logical feature/test group
-   - Commit: `feat(GREEN): implement [feature]`
-3. **REFACTOR Phase:** Improve code quality without changing behavior
-   - Commit: `refactor(REFACTOR): [improvement]`
-
-**Property-Based Testing:**
-
-- For complex logic (AI ranking, date validation, permissions), prefer `fast-check` over example-based tests
-- Property tests generate 100+ random inputs to discover edge cases humans miss
-- Example: Date validation found `NaN` edge case via `fc.date()`
+**TDD Workflow:** RED (write failing tests → confirm fail → `test(RED): ...`) → GREEN (min implementation → `feat(GREEN): ...`) → REFACTOR (improve code → `refactor(REFACTOR): ...`)
 
 ---
 
 ## Session Logging Workflow
 
-Document complex work sessions to maintain project knowledge and enable context recovery.
+**When:** After exploration/planning/major implementations · Before `/compact` when context full
 
-**When to log:**
+**Format:** `docs/sessions/[TYPE]_[date/task].md` where TYPE = EXPLORE (findings, decisions, next steps) | PLAN (requirements, design, steps) | IMPLEMENT (what built, decisions, course corrections, git history, test results, next recommendations)
 
-- After completing exploration of unfamiliar codebase areas
-- After finalizing implementation plans before coding
-- After major feature implementations with course corrections
-- Before running `/compact` when context becomes full
-
-**Logging format:**
-
-- **Explore Phase:** Save summary to `docs/sessions/EXPLORE_[task].md`
-  - Findings, architectural decisions, next steps
-- **Plan Phase:** Save approved plan to `docs/sessions/PLAN_[task].md`
-  - Requirements, design decisions, implementation steps
-- **Implementation:** Save to `docs/sessions/IMPLEMENT_[date]_[task].md`
-  - What was built, key decisions, course corrections, lessons learned
-  - Git commit history, test results, dependencies added
-  - Next session recommendations
-
-**Context management:**
-
-- If context becomes full during exploration, suggest `/compact` and summarize findings to file
-- For large features, use Document-then-Implement workflow:
-  1. Write design to `docs/sessions/PLAN_[task].md`
-  2. Execute `/clear` to reset context
-  3. Re-read plan file to start implementation with clean context
+**Context management:** Suggest `/compact` and summarize to file when full · For large features: write `PLAN_*.md` → `/clear` → re-read plan → implement with clean context
 
 ---
 
@@ -200,28 +163,6 @@ Branch protection enforced. Secrets in GitHub Actions + Vercel dashboard only �
 
 ## Do's and Don'ts
 
-✅ **Do:**
+✅ **Do:** Use Shadcn before custom UI · Log `/api/match` I/O to `match_evals` · Cache with Redis (5min TTL) · Store secrets in GitHub/Vercel env only · Fix High/Critical security findings before merge · **Run tests and confirm RED before implementing** · **Write tests BEFORE implementation (strict TDD)** · **Use `fast-check` for complex logic** · **Document sessions to `docs/sessions/` before `/compact`** · **Suggest `/compact` proactively**
 
-- Use Shadcn before custom UI
-- Log all `/api/match` I/O to `match_evals`
-- Cache search results with Redis (5min TTL)
-- Store secrets in GitHub/Vercel env only
-- Fix High/Critical security findings before merge
-- **Run existing related tests and confirm RED state before implementing**
-- **Write tests BEFORE implementation (strict TDD)**
-- **Use `fast-check` for complex logic (AI ranking, validation, permissions)**
-- **Document complex sessions to `docs/sessions/` before `/compact` or `/clear`**
-- **Suggest `/compact` proactively after complex exploration phases**
-
-🚫 **Don't:**
-
-- AI calls from client
-- Skip RLS policies
-- Use `any` in TypeScript
-- Magic link/OAuth (email+password only)
-- Commit `.env*` files
-- Expose internal errors or stack traces
-- Merge with open security findings
-- **Write business logic without corresponding test cases**
-- **Skip RED confirmation before GREEN implementation**
-- **Use only example-based tests for complex validation logic**
+🚫 **Don't:** AI calls from client · Skip RLS policies · Use `any` in TypeScript · Magic link/OAuth (email+password only) · Commit `.env*` files · Expose internal errors/stack traces · Merge with open security findings · **Write logic without tests** · **Skip RED confirmation** · **Use only example-based tests for complex logic**
