@@ -3,21 +3,33 @@
 
 import { Redis } from 'ioredis'
 
-let redis: Redis | null = null
+let redisInstance: Redis | null = null
 
 export function getRedisClient(): Redis {
-  if (!redis) {
+  if (!redisInstance) {
     const url = process.env.REDIS_URL
     if (!url) throw new Error('REDIS_URL environment variable is not set')
 
-    redis = new Redis(url, {
+    redisInstance = new Redis(url, {
       lazyConnect: true,
       maxRetriesPerRequest: 3,
       retryStrategy: (times) => Math.min(times * 50, 2000),
     })
   }
-  return redis
+  return redisInstance
 }
+
+// Mockable redis client wrapper for testing
+export const redis = {
+  get: async (key: string) => {
+    return getRedisClient().get(key)
+  },
+  set: async (key: string, value: string, ...args: any[]) => {
+    return getRedisClient().set(key, value, ...args)
+  }
+}
+
+export default redis
 
 // Cache key format: teachers:available:{start_date}:{end_date}:{classroom}:{name}
 // Empty string used for absent optional params to keep key structure stable.
