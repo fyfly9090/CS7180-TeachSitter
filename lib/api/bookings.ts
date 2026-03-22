@@ -25,16 +25,16 @@ export async function updateBookingStatus(
   // For testing purposes, we simulate a booking owned by 'uuid-teacher-1'
   const mockBooking = {
     id: bookingId,
-    teacher_id: 'uuid-teacher-1'
+    teacher_id: "uuid-teacher-1",
   };
 
   if (mockBooking.teacher_id !== teacherId) {
     return {
       status: 403,
       error: {
-        code: 'UNAUTHORIZED_ACTION',
-        message: 'You are not authorized to modify this booking'
-      }
+        code: "UNAUTHORIZED_ACTION",
+        message: "You are not authorized to modify this booking",
+      },
     };
   }
 
@@ -42,7 +42,7 @@ export async function updateBookingStatus(
     status: 200,
     booking: {
       id: bookingId,
-      status: newStatus
-    }
+      status: newStatus,
+    },
   };
 }

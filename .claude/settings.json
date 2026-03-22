@@ -24,12 +24,7 @@
       "Bash(git branch *)",
       "Bash(git pull *)"
     ],
-    "ask": [
-      "Bash(curl *)"
-    ],
-    "deny": [
-      "Bash(rm -rf *)",
-      "Bash(wget *)"
-    ]
+    "ask": ["Bash(curl *)"],
+    "deny": ["Bash(rm -rf *)", "Bash(wget *)"]
   }
 }

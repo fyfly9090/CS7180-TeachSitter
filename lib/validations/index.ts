@@ -2,27 +2,22 @@
 // Every API route parses its input through one of these schemas.
 // ZodError thrown by .parse() is caught and serialized by withApiHandler in lib/errors.ts.
 
-import { z } from 'zod'
+import { z } from "zod";
 
 // =====================
 // Shared Primitives
 // =====================
 
-const dateString = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD format')
+const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format");
 
 // Reusable cross-field refinement: end_date must be >= start_date
-function dateRangeRefinement(
-  data: { start_date: string; end_date: string },
-  ctx: z.RefinementCtx,
-) {
+function dateRangeRefinement(data: { start_date: string; end_date: string }, ctx: z.RefinementCtx) {
   if (data.end_date < data.start_date) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'end_date must be on or after start_date',
-      path: ['end_date'],
-    })
+      message: "end_date must be on or after start_date",
+      path: ["end_date"],
+    });
   }
 }
 
@@ -32,16 +27,16 @@ function dateRangeRefinement(
 
 export const signupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['parent', 'teacher']),
-})
-export type SignupInput = z.infer<typeof signupSchema>
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(["parent", "teacher"]),
+});
+export type SignupInput = z.infer<typeof signupSchema>;
 
 export const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(1, 'Password is required'),
-})
-export type LoginInput = z.infer<typeof loginSchema>
+  password: z.string().min(1, "Password is required"),
+});
+export type LoginInput = z.infer<typeof loginSchema>;
 
 // =====================
 // Teacher Search — GET /api/teachers/available
@@ -56,8 +51,8 @@ export const teachersAvailableQuerySchema = z
     classroom: z.string().max(100).optional(),
     name: z.string().max(100).optional(),
   })
-  .superRefine(dateRangeRefinement)
-export type TeachersAvailableQuery = z.infer<typeof teachersAvailableQuerySchema>
+  .superRefine(dateRangeRefinement);
+export type TeachersAvailableQuery = z.infer<typeof teachersAvailableQuerySchema>;
 
 // =====================
 // AI Match — POST /api/match
@@ -69,7 +64,7 @@ const teacherInputSchema = z.object({
   name: z.string().max(200),
   classroom: z.string().max(100),
   bio: z.string().max(2000),
-})
+});
 
 export const matchRequestSchema = z
   .object({
@@ -79,8 +74,8 @@ export const matchRequestSchema = z
     end_date: dateString,
     teachers: z.array(teacherInputSchema).min(1).max(50),
   })
-  .superRefine(dateRangeRefinement)
-export type MatchRequestInput = z.infer<typeof matchRequestSchema>
+  .superRefine(dateRangeRefinement);
+export type MatchRequestInput = z.infer<typeof matchRequestSchema>;
 
 // =====================
 // Bookings — POST /api/bookings
@@ -94,8 +89,8 @@ export const createBookingSchema = z
     end_date: dateString,
     message: z.string().max(500).optional(),
   })
-  .superRefine(dateRangeRefinement)
-export type CreateBookingInput = z.infer<typeof createBookingSchema>
+  .superRefine(dateRangeRefinement);
+export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 
 // =====================
 // Booking Status Update — PATCH /api/bookings/[id]
@@ -103,9 +98,9 @@ export type CreateBookingInput = z.infer<typeof createBookingSchema>
 // =====================
 
 export const updateBookingSchema = z.object({
-  status: z.enum(['confirmed', 'declined']),
-})
-export type UpdateBookingInput = z.infer<typeof updateBookingSchema>
+  status: z.enum(["confirmed", "declined"]),
+});
+export type UpdateBookingInput = z.infer<typeof updateBookingSchema>;
 
 // =====================
 // Evals Query — GET /api/evals
@@ -115,5 +110,5 @@ export type UpdateBookingInput = z.infer<typeof updateBookingSchema>
 export const evalsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   offset: z.coerce.number().int().min(0).default(0),
-})
-export type EvalsQuery = z.infer<typeof evalsQuerySchema>
+});
+export type EvalsQuery = z.infer<typeof evalsQuerySchema>;

@@ -7,10 +7,10 @@
 export function validateBookingDates(startDate: Date, endDate: Date): void {
   // Check for invalid dates (NaN)
   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-    throw new Error('Invalid date provided');
+    throw new Error("Invalid date provided");
   }
 
   if (endDate < startDate) {
-    throw new Error('end_date must not be before start_date');
+    throw new Error("end_date must not be before start_date");
   }
 }

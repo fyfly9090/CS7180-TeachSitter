@@ -1,9 +1,9 @@
 // POST /api/auth/login — Sign in with email + password
 
-import { NextResponse } from 'next/server';
-import { withApiHandler, errors } from '@/lib/errors';
-import { loginSchema } from '@/lib/validations';
-import { createClient } from '@/lib/supabase/server';
+import { NextResponse } from "next/server";
+import { withApiHandler, errors } from "@/lib/errors";
+import { loginSchema } from "@/lib/validations";
+import { createClient } from "@/lib/supabase/server";
 
 export const POST = withApiHandler(async (req: Request) => {
   const body = await req.json();
@@ -13,17 +13,17 @@ export const POST = withApiHandler(async (req: Request) => {
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
-    password
+    password,
   });
 
   if (error || !data.session) {
-    throw errors.unauthorized('Invalid credentials');
+    throw errors.unauthorized("Invalid credentials");
   }
 
   return NextResponse.json({
     session: {
       access_token: data.session.access_token,
-      expires_at: data.session.expires_at
-    }
+      expires_at: data.session.expires_at,
+    },
   });
 });

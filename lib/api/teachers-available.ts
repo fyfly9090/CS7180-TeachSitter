@@ -1,6 +1,6 @@
 // Teacher Availability API Logic with Redis Caching
 
-import redis, { CACHE_TTL_SECONDS } from '../redis/client';
+import redis, { CACHE_TTL_SECONDS } from "../redis/client";
 
 export interface TeacherAvailabilityQuery {
   start_date: string;
@@ -50,7 +50,7 @@ export async function getAvailableTeachers(
   const response = { teachers };
 
   // Cache the result
-  await redis.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL_SECONDS);
+  await redis.set(cacheKey, JSON.stringify(response), "EX", CACHE_TTL_SECONDS);
 
   return response;
 }
