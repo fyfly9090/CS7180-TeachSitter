@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(npm run build)",
+      "Bash(npm run lint)",
+      "Bash(npm run test)",
+      "Bash(npm run test:watch)",
+      "Bash(npm run test:e2e)",
+      "Bash(npm run test:coverage)",
+      "Bash(npm run test -- *)",
+      "Bash(npm install)",
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest add *)",
+      "Bash(npx shadcn@latest init)",
+      "Bash(npx supabase *)",
+      "Bash(npx playwright *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git branch *)",
+      "Bash(git pull *)"
+    ],
+    "ask": ["Bash(curl *)"],
+    "deny": ["Bash(rm -rf *)", "Bash(wget *)"]
+  }
+}
