@@ -25,9 +25,7 @@ function isApiRoute(pathname: string): boolean {
 }
 
 function isParentRoute(pathname: string): boolean {
-  return PARENT_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route + "/")
-  );
+  return PARENT_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"));
 }
 
 function isTeacherRoute(pathname: string): boolean {
@@ -82,9 +80,7 @@ export async function middleware(request: NextRequest) {
 
   // Protected page routes — redirect unauthenticated users to /login
   if (!user) {
-    const redirectResponse = NextResponse.redirect(
-      new URL("/login", request.url)
-    );
+    const redirectResponse = NextResponse.redirect(new URL("/login", request.url));
     supabaseResponse.cookies
       .getAll()
       .forEach(({ name, value }) => redirectResponse.cookies.set(name, value));
@@ -95,9 +91,7 @@ export async function middleware(request: NextRequest) {
 
   // Parents cannot access teacher routes
   if (role === "parent" && isTeacherRoute(pathname)) {
-    const redirectResponse = NextResponse.redirect(
-      new URL("/dashboard", request.url)
-    );
+    const redirectResponse = NextResponse.redirect(new URL("/dashboard", request.url));
     supabaseResponse.cookies
       .getAll()
       .forEach(({ name, value }) => redirectResponse.cookies.set(name, value));
@@ -106,9 +100,7 @@ export async function middleware(request: NextRequest) {
 
   // Teachers cannot access parent routes
   if (role === "teacher" && isParentRoute(pathname)) {
-    const redirectResponse = NextResponse.redirect(
-      new URL("/teacher/dashboard", request.url)
-    );
+    const redirectResponse = NextResponse.redirect(new URL("/teacher/dashboard", request.url));
     supabaseResponse.cookies
       .getAll()
       .forEach(({ name, value }) => redirectResponse.cookies.set(name, value));

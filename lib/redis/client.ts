@@ -24,7 +24,7 @@ export const redis = {
   get: async (key: string) => {
     return getRedisClient().get(key);
   },
-  set: async (key: string, value: string, ...args: any[]) => {
+  set: async (key: string, value: string, ...args: (string | number)[]) => {
     return getRedisClient().set(key, value, ...args);
   },
 };

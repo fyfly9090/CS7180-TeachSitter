@@ -54,40 +54,51 @@ describe.skipIf(!canRun)("RLS smoke tests", () => {
   beforeAll(async () => {
     // Create ephemeral test users via admin API
     const { data: pA, error: pAErr } = await admin.auth.admin.createUser({
-      email: parentAEmail, password: TEST_PASSWORD,
-      user_metadata: { role: "parent" }, email_confirm: true,
+      email: parentAEmail,
+      password: TEST_PASSWORD,
+      user_metadata: { role: "parent" },
+      email_confirm: true,
     });
     if (pAErr) throw pAErr;
     parentAId = pA.user.id;
 
     const { data: pB, error: pBErr } = await admin.auth.admin.createUser({
-      email: parentBEmail, password: TEST_PASSWORD,
-      user_metadata: { role: "parent" }, email_confirm: true,
+      email: parentBEmail,
+      password: TEST_PASSWORD,
+      user_metadata: { role: "parent" },
+      email_confirm: true,
     });
     if (pBErr) throw pBErr;
     parentBId = pB.user.id;
 
     const { data: tA, error: tAErr } = await admin.auth.admin.createUser({
-      email: teacherAEmail, password: TEST_PASSWORD,
-      user_metadata: { role: "teacher" }, email_confirm: true,
+      email: teacherAEmail,
+      password: TEST_PASSWORD,
+      user_metadata: { role: "teacher" },
+      email_confirm: true,
     });
     if (tAErr) throw tAErr;
     teacherAId = tA.user.id;
 
     const { data: tB, error: tBErr } = await admin.auth.admin.createUser({
-      email: teacherBEmail, password: TEST_PASSWORD,
-      user_metadata: { role: "teacher" }, email_confirm: true,
+      email: teacherBEmail,
+      password: TEST_PASSWORD,
+      user_metadata: { role: "teacher" },
+      email_confirm: true,
     });
     if (tBErr) throw tBErr;
     teacherBId = tB.user.id;
 
     // Ensure profiles exist (trigger fires on auth.users insert, but belt+suspenders)
-    await admin.from("profiles").upsert([
-      { id: parentAId,  email: parentAEmail,  role: "parent"  },
-      { id: parentBId,  email: parentBEmail,  role: "parent"  },
-      { id: teacherAId, email: teacherAEmail, role: "teacher" },
-      { id: teacherBId, email: teacherBEmail, role: "teacher" },
-    ], { onConflict: "id", ignoreDuplicates: true });
+    await admin.from("profiles").upsert(
+      [
+        { id: parentAId, email: parentAEmail, role: "parent" },
+        { id: parentBId, email: parentBEmail, role: "parent" },
+        { id: teacherAId, email: teacherAEmail, role: "teacher" },
+        { id: teacherBId, email: teacherBEmail, role: "teacher" },
+      ],
+      { onConflict: "id", ignoreDuplicates: true }
+    );
 
     // Insert teacher profiles via service role (bypasses RLS)
     const { data: tAProfile, error: tAProfileErr } = await admin
@@ -108,8 +119,18 @@ describe.skipIf(!canRun)("RLS smoke tests", () => {
 
     // Insert availability for teacher A: one unbooked + one booked slot
     await admin.from("availability").insert([
-      { teacher_id: teacherAProfileId, start_date: "2026-06-16", end_date: "2026-06-20", is_booked: false },
-      { teacher_id: teacherAProfileId, start_date: "2026-07-01", end_date: "2026-07-05", is_booked: true  },
+      {
+        teacher_id: teacherAProfileId,
+        start_date: "2026-06-16",
+        end_date: "2026-06-20",
+        is_booked: false,
+      },
+      {
+        teacher_id: teacherAProfileId,
+        start_date: "2026-07-01",
+        end_date: "2026-07-05",
+        is_booked: true,
+      },
     ]);
 
     // Insert child for parent A
@@ -144,7 +165,10 @@ describe.skipIf(!canRun)("RLS smoke tests", () => {
     // Clean up in reverse dependency order via service role
     await admin.from("bookings").delete().in("parent_id", [parentAId, parentBId]);
     await admin.from("children").delete().in("parent_id", [parentAId, parentBId]);
-    await admin.from("availability").delete().in("teacher_id", [teacherAProfileId, teacherBProfileId]);
+    await admin
+      .from("availability")
+      .delete()
+      .in("teacher_id", [teacherAProfileId, teacherBProfileId]);
     await admin.from("teachers").delete().in("user_id", [teacherAId, teacherBId]);
     await admin.auth.admin.deleteUser(parentAId);
     await admin.auth.admin.deleteUser(parentBId);
@@ -166,10 +190,7 @@ describe.skipIf(!canRun)("RLS smoke tests", () => {
 
     test("parent cannot see another parent's children", async () => {
       const client = await signInAs(parentBEmail, TEST_PASSWORD);
-      const { data, error } = await client
-        .from("children")
-        .select("*")
-        .eq("id", childAId);
+      const { data, error } = await client.from("children").select("*").eq("id", childAId);
       expect(error).toBeNull();
       expect(data).toHaveLength(0); // RLS filters out parent A's child
     });
@@ -200,11 +221,7 @@ describe.skipIf(!canRun)("RLS smoke tests", () => {
       // Teacher B tries to confirm booking A (which belongs to teacher A)
       await client.from("bookings").update({ status: "confirmed" }).eq("id", bookingAId);
       // Verify via service role that status is unchanged
-      const { data } = await admin
-        .from("bookings")
-        .select("status")
-        .eq("id", bookingAId)
-        .single();
+      const { data } = await admin.from("bookings").select("status").eq("id", bookingAId).single();
       expect(data!.status).toBe("pending");
     });
   });

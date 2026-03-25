@@ -20,10 +20,7 @@ function makeRequest(pathname: string): NextRequest {
 }
 
 function setUser(role: "parent" | "teacher" | null) {
-  const user =
-    role === null
-      ? null
-      : { id: "uuid-123", user_metadata: { role } };
+  const user = role === null ? null : { id: "uuid-123", user_metadata: { role } };
   mockGetUser.mockResolvedValue({ data: { user }, error: null });
 }
 
