@@ -1,1 +1,56 @@
 @import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-sans: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), "Newsreader", Georgia, serif;
+
+  /* Brand colors */
+  --color-primary: #455e87;
+  --color-primary-container: #5e77a1;
+  --color-primary-fixed: #d6e3ff;
+  --color-primary-fixed-dim: #aec7f7;
+  --color-on-primary: #ffffff;
+
+  --color-secondary: #a14009;
+  --color-secondary-container: #fd844c;
+  --color-secondary-fixed: #ffdbcd;
+  --color-secondary-fixed-dim: #ffb596;
+  --color-on-secondary: #ffffff;
+
+  --color-tertiary: #546147;
+  --color-tertiary-container: #6d7a5f;
+  --color-tertiary-fixed: #d9e8c6;
+  --color-tertiary-fixed-dim: #bdcbac;
+  --color-on-tertiary-container: #1b2315;
+
+  /* Surfaces */
+  --color-background: #fcf9f4;
+  --color-surface: #fcf9f4;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f6f3ee;
+  --color-surface-container: #f0ede9;
+  --color-surface-container-high: #ebe8e3;
+  --color-surface-container-highest: #e5e2dd;
+
+  /* Text & borders */
+  --color-on-surface: #1c1c19;
+  --color-on-surface-variant: #414750;
+  --color-outline: #717881;
+  --color-outline-variant: #c1c7d1;
+
+  /* Error */
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+}
+
+/* Material Symbols */
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+/* Smooth focus rings */
+*:focus-visible {
+  outline: 2px solid #aec7f7;
+  outline-offset: 2px;
+}
