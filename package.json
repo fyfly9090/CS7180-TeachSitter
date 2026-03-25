@@ -9,7 +9,8 @@
     "lint": "next lint && prettier --check .",
     "test": "vitest",
     "test:e2e": "playwright test",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "db:seed": "npx supabase db seed"
   },
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
