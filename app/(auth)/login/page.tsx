@@ -69,25 +69,20 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
-
         {/* Card */}
         <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-sm border border-outline-variant/20">
-
           {/* Logo */}
           <p className="font-serif italic font-bold text-2xl text-primary text-center">
             TeachSitter
           </p>
 
           {/* Title & subtitle */}
-          <h1 className="text-3xl font-bold text-on-surface text-center mt-4">
-            Welcome back
-          </h1>
+          <h1 className="text-3xl font-bold text-on-surface text-center mt-4">Welcome back</h1>
           <p className="text-sm text-on-surface-variant text-center mt-1 mb-8">
             Sign in to your account
           </p>
 
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
-
             {/* Email */}
             <div>
               <label
@@ -180,9 +175,13 @@ export default function LoginPage() {
         {/* Footer */}
         <p className="text-xs text-outline text-center mt-8">
           © 2026 TeachSitter ·{" "}
-          <Link href="/privacy" className="hover:underline">Privacy</Link>
+          <Link href="/privacy" className="hover:underline">
+            Privacy
+          </Link>
           {" · "}
-          <Link href="/terms" className="hover:underline">Terms</Link>
+          <Link href="/terms" className="hover:underline">
+            Terms
+          </Link>
         </p>
       </div>
     </div>

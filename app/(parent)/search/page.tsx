@@ -35,7 +35,10 @@ function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <button className="p-2 rounded-full hover:bg-surface-container transition-colors" aria-label="Notifications">
+          <button
+            className="p-2 rounded-full hover:bg-surface-container transition-colors"
+            aria-label="Notifications"
+          >
             <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
           </button>
           <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
@@ -70,7 +73,9 @@ function MobileBottomNav() {
               }`}
             >
               <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-              <span className="text-[10px] font-semibold uppercase tracking-widest">{item.label}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest">
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -211,8 +216,10 @@ export default function SearchPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-lg font-bold text-on-surface">{teacher.name}</h3>
                       <span className="bg-primary-fixed text-primary text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[12px]"
-                          style={{ fontVariationSettings: "'FILL' 1" }}>
+                        <span
+                          className="material-symbols-outlined text-[12px]"
+                          style={{ fontVariationSettings: "'FILL' 1" }}
+                        >
                           verified
                         </span>
                         Verified
@@ -221,8 +228,12 @@ export default function SearchPage() {
 
                     {/* Classroom */}
                     <div className="flex items-center gap-1 mt-1">
-                      <span className="material-symbols-outlined text-[14px] text-on-surface-variant">school</span>
-                      <span className="text-sm text-on-surface-variant">{teacher.classroom} Class</span>
+                      <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                        school
+                      </span>
+                      <span className="text-sm text-on-surface-variant">
+                        {teacher.classroom} Class
+                      </span>
                     </div>
 
                     {/* Bio */}
@@ -231,11 +242,17 @@ export default function SearchPage() {
                     {/* Availability row */}
                     <div className="flex items-center gap-4 mt-2 flex-wrap">
                       <div className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">calendar_today</span>
-                        <span className="text-xs text-on-surface-variant">{teacher.availability}</span>
+                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                          calendar_today
+                        </span>
+                        <span className="text-xs text-on-surface-variant">
+                          {teacher.availability}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">schedule</span>
+                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                          schedule
+                        </span>
                         <span className="text-xs text-on-surface-variant">{teacher.hours}</span>
                       </div>
                     </div>
@@ -249,7 +266,9 @@ export default function SearchPage() {
                         >
                           auto_awesome
                         </span>
-                        <p className="italic text-xs text-on-surface-variant">{teacher.reasoning}</p>
+                        <p className="italic text-xs text-on-surface-variant">
+                          {teacher.reasoning}
+                        </p>
                       </div>
                     </div>
 

@@ -67,9 +67,7 @@ function TeacherNavbar() {
             aria-label="Notifications"
             className="text-on-surface-variant hover:text-primary transition-colors"
           >
-            <span className="material-symbols-outlined text-xl">
-              notifications
-            </span>
+            <span className="material-symbols-outlined text-xl">notifications</span>
           </button>
           <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
             T
@@ -106,9 +104,7 @@ function MobileBottomNav() {
                 isActive ? "text-primary" : "text-on-surface-variant"
               }`}
             >
-              <span className="material-symbols-outlined text-2xl">
-                {item.icon}
-              </span>
+              <span className="material-symbols-outlined text-2xl">{item.icon}</span>
               <span className="text-[10px] font-semibold uppercase tracking-widest">
                 {item.label}
               </span>
@@ -175,19 +171,14 @@ const initialPendingRequests: BookingRequest[] = [
 // ---------------------------------------------------------------------------
 
 export default function TeacherDashboardPage() {
-  const [requests, setRequests] =
-    useState<BookingRequest[]>(initialPendingRequests);
+  const [requests, setRequests] = useState<BookingRequest[]>(initialPendingRequests);
 
   function handleAccept(id: number) {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "accepted" } : r))
-    );
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "accepted" } : r)));
   }
 
   function handleDecline(id: number) {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "declined" } : r))
-    );
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "declined" } : r)));
   }
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
@@ -200,17 +191,13 @@ export default function TeacherDashboardPage() {
       <main className="pt-16 pb-24 md:pb-8 bg-background min-h-screen">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
           {/* Page header */}
-          <h1 className="text-3xl font-bold text-on-surface">
-            Good morning, Ms. Tara!
-          </h1>
+          <h1 className="text-3xl font-bold text-on-surface">Good morning, Ms. Tara!</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-tertiary"></span>
             </span>
-            <span className="text-sm text-on-surface-variant">
-              Available for bookings
-            </span>
+            <span className="text-sm text-on-surface-variant">Available for bookings</span>
           </div>
 
           {/* Stats */}
@@ -220,18 +207,14 @@ export default function TeacherDashboardPage() {
                 event_available
               </span>
               <p className="text-4xl font-bold text-on-surface mt-2">3</p>
-              <p className="text-sm text-on-surface-variant font-medium">
-                Upcoming Sessions
-              </p>
+              <p className="text-sm text-on-surface-variant font-medium">Upcoming Sessions</p>
             </div>
             <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm">
               <span className="material-symbols-outlined text-2xl text-secondary">
                 pending_actions
               </span>
               <p className="text-4xl font-bold text-on-surface mt-2">2</p>
-              <p className="text-sm text-on-surface-variant font-medium">
-                Pending Requests
-              </p>
+              <p className="text-sm text-on-surface-variant font-medium">Pending Requests</p>
             </div>
           </div>
 
@@ -239,9 +222,7 @@ export default function TeacherDashboardPage() {
           <div className="grid lg:grid-cols-12 gap-8">
             {/* Left — Upcoming Sessions */}
             <div className="lg:col-span-8">
-              <h2 className="text-xl font-bold text-on-surface mb-4">
-                Upcoming Sessions
-              </h2>
+              <h2 className="text-xl font-bold text-on-surface mb-4">Upcoming Sessions</h2>
 
               <div className="flex flex-col gap-3">
                 {upcomingSessions.map((session) => (
@@ -268,17 +249,13 @@ export default function TeacherDashboardPage() {
                         <span className="material-symbols-outlined text-sm text-on-surface-variant leading-none">
                           calendar_month
                         </span>
-                        <span className="text-sm text-on-surface-variant">
-                          {session.dateRange}
-                        </span>
+                        <span className="text-sm text-on-surface-variant">{session.dateRange}</span>
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
                         <span className="material-symbols-outlined text-sm text-on-surface-variant leading-none">
                           schedule
                         </span>
-                        <span className="text-sm text-on-surface-variant">
-                          {session.time}
-                        </span>
+                        <span className="text-sm text-on-surface-variant">{session.time}</span>
                       </div>
                       <button className="text-xs text-primary font-semibold mt-1 hover:underline">
                         View Details
@@ -294,8 +271,7 @@ export default function TeacherDashboardPage() {
                   lightbulb
                 </span>
                 <p className="text-sm text-on-surface-variant">
-                  Reminder: Confirm or decline requests within 48 hours so
-                  parents can plan ahead.
+                  Reminder: Confirm or decline requests within 48 hours so parents can plan ahead.
                 </p>
               </div>
             </div>
@@ -307,9 +283,7 @@ export default function TeacherDashboardPage() {
                   <span className="material-symbols-outlined text-secondary text-xl">
                     pending_actions
                   </span>
-                  <h2 className="text-base font-bold text-on-surface">
-                    Pending Requests
-                  </h2>
+                  <h2 className="text-base font-bold text-on-surface">Pending Requests</h2>
                 </div>
 
                 <div className="flex flex-col gap-3">
@@ -327,11 +301,9 @@ export default function TeacherDashboardPage() {
                           {request.parentName}
                         </span>
                       </div>
-                      <p className="text-xs text-on-surface-variant mt-1">
-                        {request.dateRange}
-                      </p>
+                      <p className="text-xs text-on-surface-variant mt-1">{request.dateRange}</p>
                       <p className="italic text-xs text-on-surface-variant mt-1 line-clamp-2">
-                        "{request.message}"
+                        &quot;{request.message}&quot;
                       </p>
 
                       {/* Action buttons or status */}
@@ -358,9 +330,7 @@ export default function TeacherDashboardPage() {
                               : "bg-surface-container-high text-on-surface-variant"
                           }`}
                         >
-                          {request.status === "accepted"
-                            ? "Accepted"
-                            : "Declined"}
+                          {request.status === "accepted" ? "Accepted" : "Declined"}
                         </div>
                       )}
                     </div>

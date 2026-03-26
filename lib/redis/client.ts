@@ -24,8 +24,15 @@ export const redis = {
   get: async (key: string) => {
     return getRedisClient().get(key);
   },
-  set: async (key: string, value: string, ...args: any[]) => {
-    return getRedisClient().set(key, value, ...args);
+  set: async (key: string, value: string, expiryMode?: "EX" | "PX", time?: number) => {
+    const client = getRedisClient();
+    if (expiryMode === "EX" && time !== undefined) {
+      return client.set(key, value, "EX", time);
+    }
+    if (expiryMode === "PX" && time !== undefined) {
+      return client.set(key, value, "PX", time);
+    }
+    return client.set(key, value);
   },
 };
 

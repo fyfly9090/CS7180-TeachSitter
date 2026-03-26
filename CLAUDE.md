@@ -72,10 +72,12 @@ npm run test:coverage                 # Coverage report (target >80%)
   PRD.md            — product requirements
   API.md            — API documentation
 ```
+
 ---
+
 ## UI Reference
-See `docs/mockups/` for approved page designs. Match the color tokens, typography, and component patterns exactly.
----
+
+## See `docs/mockups/` for approved page designs. Match the color tokens, typography, and component patterns exactly.
 
 ## Database Schema
 
@@ -87,6 +89,7 @@ children     — id, parent_id, classroom, age
 bookings     — id, parent_id, teacher_id, start_date, end_date, status (pending | confirmed | declined)
 match_evals  — id, parent_id, ranked_teachers (json), judge_score, created_at
 ```
+
 ---
 
 ## Architecture Decisions

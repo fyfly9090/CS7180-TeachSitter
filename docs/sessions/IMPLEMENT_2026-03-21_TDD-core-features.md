@@ -288,16 +288,16 @@ export function validateBookingDates(startDate: Date, endDate: Date): void {
 
 ## Metrics
 
-| Metric                  | Value |
-| ----------------------- | ----- |
-| Tests written           | 5     |
-| Tests passing           | 5     |
-| Commits (TDD cycle)     | 7     |
-| Files created           | 10    |
-| Property-based tests    | 1     |
-| Edge cases discovered   | 1     |
-| Time to complete        | ~15min |
-| Code formatted          | ✅     |
+| Metric                | Value  |
+| --------------------- | ------ |
+| Tests written         | 5      |
+| Tests passing         | 5      |
+| Commits (TDD cycle)   | 7      |
+| Files created         | 10     |
+| Property-based tests  | 1      |
+| Edge cases discovered | 1      |
+| Time to complete      | ~15min |
+| Code formatted        | ✅     |
 
 ---
 

@@ -62,9 +62,7 @@ function TeacherNavbar() {
             aria-label="Notifications"
             className="text-on-surface-variant hover:text-primary transition-colors"
           >
-            <span className="material-symbols-outlined text-xl">
-              notifications
-            </span>
+            <span className="material-symbols-outlined text-xl">notifications</span>
           </button>
           <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
             T
@@ -101,9 +99,7 @@ function MobileBottomNav() {
                 isActive ? "text-primary" : "text-on-surface-variant"
               }`}
             >
-              <span className="material-symbols-outlined text-2xl">
-                {item.icon}
-              </span>
+              <span className="material-symbols-outlined text-2xl">{item.icon}</span>
               <span className="text-[10px] font-semibold uppercase tracking-widest">
                 {item.label}
               </span>
@@ -144,8 +140,7 @@ export default function TeacherSetupPage() {
     "Art & Crafts",
     "Storytelling",
   ]);
-  const [availability, setAvailability] =
-    useState<AvailabilityBlock[]>(initialAvailability);
+  const [availability, setAvailability] = useState<AvailabilityBlock[]>(initialAvailability);
   const [nextBlockId, setNextBlockId] = useState(3);
   const [saved, setSaved] = useState(false);
 
@@ -174,9 +169,7 @@ export default function TeacherSetupPage() {
   }
 
   function updateBlockDate(id: number, field: "from" | "to", value: string) {
-    setAvailability((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, [field]: value } : b))
-    );
+    setAvailability((prev) => prev.map((b) => (b.id === id ? { ...b, [field]: value } : b)));
   }
 
   function handleSave() {
@@ -219,9 +212,7 @@ export default function TeacherSetupPage() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <p className="text-lg font-bold text-on-surface">
-                      Ms. Tara Smith
-                    </p>
+                    <p className="text-lg font-bold text-on-surface">Ms. Tara Smith</p>
                     <div className="flex items-center gap-1 text-sm text-on-surface-variant">
                       <span className="material-symbols-outlined text-base leading-none">
                         school
@@ -313,9 +304,7 @@ export default function TeacherSetupPage() {
                 {/* Availability card */}
                 <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm mb-6">
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-base font-bold text-on-surface">
-                      My Availability
-                    </h2>
+                    <h2 className="text-base font-bold text-on-surface">My Availability</h2>
                     <button
                       onClick={addAvailabilityBlock}
                       aria-label="Add availability block"
@@ -344,9 +333,7 @@ export default function TeacherSetupPage() {
                             <input
                               type="date"
                               value={block.from}
-                              onChange={(e) =>
-                                updateBlockDate(block.id, "from", e.target.value)
-                              }
+                              onChange={(e) => updateBlockDate(block.id, "from", e.target.value)}
                               className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"
                             />
                           </div>
@@ -357,9 +344,7 @@ export default function TeacherSetupPage() {
                             <input
                               type="date"
                               value={block.to}
-                              onChange={(e) =>
-                                updateBlockDate(block.id, "to", e.target.value)
-                              }
+                              onChange={(e) => updateBlockDate(block.id, "to", e.target.value)}
                               className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"
                             />
                           </div>
@@ -388,12 +373,10 @@ export default function TeacherSetupPage() {
                       lightbulb
                     </span>
                     <div>
-                      <p className="text-sm font-bold text-primary">
-                        Teacher's Tip
-                      </p>
+                      <p className="text-sm font-bold text-primary">Teacher&apos;s Tip</p>
                       <p className="text-sm text-on-surface-variant mt-0.5">
-                        Teachers with complete profiles and clear availability
-                        get 3× more booking requests.
+                        Teachers with complete profiles and clear availability get 3× more booking
+                        requests.
                       </p>
                     </div>
                   </div>

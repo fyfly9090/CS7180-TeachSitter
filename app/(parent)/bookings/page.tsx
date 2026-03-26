@@ -34,7 +34,10 @@ function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <button className="p-2 rounded-full hover:bg-surface-container transition-colors" aria-label="Notifications">
+          <button
+            className="p-2 rounded-full hover:bg-surface-container transition-colors"
+            aria-label="Notifications"
+          >
             <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
           </button>
           <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
@@ -69,7 +72,9 @@ function MobileBottomNav() {
               }`}
             >
               <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-              <span className="text-[10px] font-semibold uppercase tracking-widest">{item.label}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest">
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -89,7 +94,6 @@ export default function BookingsPage() {
       <Navbar />
       <div className="pt-16 pb-24 md:pb-8 bg-background min-h-screen">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
-
           {/* Page header */}
           <h1 className="text-3xl font-bold text-on-surface">My Bookings</h1>
           <p className="text-on-surface-variant mt-1">
@@ -98,15 +102,15 @@ export default function BookingsPage() {
 
           {/* Main grid */}
           <div className="lg:grid lg:grid-cols-3 lg:gap-8 mt-8">
-
             {/* Main column */}
             <div className="lg:col-span-2 flex flex-col gap-6">
-
               {/* Confirmed section */}
               <div>
                 <h2 className="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-tertiary text-[20px]"
-                    style={{ fontVariationSettings: "'FILL' 1" }}>
+                  <span
+                    className="material-symbols-outlined text-tertiary text-[20px]"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
                     check_circle
                   </span>
                   Confirmed
@@ -124,11 +128,15 @@ export default function BookingsPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-1 mt-1.5">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">calendar_today</span>
+                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                          calendar_today
+                        </span>
                         <span className="text-sm text-on-surface-variant">Jun 16–20</span>
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">schedule</span>
+                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                          schedule
+                        </span>
                         <span className="text-sm text-on-surface-variant">8am–5pm</span>
                       </div>
                       <div className="flex gap-2 mt-3 flex-wrap">
@@ -147,7 +155,9 @@ export default function BookingsPage() {
               {/* Pending Requests section */}
               <div>
                 <h2 className="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary text-[20px]">schedule</span>
+                  <span className="material-symbols-outlined text-secondary text-[20px]">
+                    schedule
+                  </span>
                   Pending Requests
                 </h2>
                 <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm">
@@ -163,11 +173,15 @@ export default function BookingsPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-1 mt-1.5">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">calendar_today</span>
+                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                          calendar_today
+                        </span>
                         <span className="text-sm text-on-surface-variant">Jun 23–27</span>
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">schedule</span>
+                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                          schedule
+                        </span>
                         <span className="text-sm text-on-surface-variant">9am–3pm</span>
                       </div>
                       <div className="flex gap-2 mt-3 flex-wrap">

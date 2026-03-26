@@ -35,7 +35,10 @@ function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <button className="p-2 rounded-full hover:bg-surface-container transition-colors" aria-label="Notifications">
+          <button
+            className="p-2 rounded-full hover:bg-surface-container transition-colors"
+            aria-label="Notifications"
+          >
             <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
           </button>
           <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
@@ -70,7 +73,9 @@ function MobileBottomNav() {
               }`}
             >
               <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-              <span className="text-[10px] font-semibold uppercase tracking-widest">{item.label}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest">
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -118,13 +123,10 @@ export default function DashboardPage() {
       <Navbar />
       <div className="bg-background min-h-screen pt-16 pb-24 md:pb-8">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
-
           {/* Top-level lg grid: main content + sidebar */}
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-
             {/* Main content: col-span-2 */}
             <div className="lg:col-span-2">
-
               {/* Page header */}
               <div>
                 <h1 className="text-3xl font-bold text-on-surface">Welcome back, Patricia!</h1>
@@ -223,8 +225,10 @@ export default function DashboardPage() {
               <div className="sticky top-24 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm">
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-base font-bold text-on-surface">AI Match</h2>
-                  <span className="material-symbols-outlined text-secondary text-[20px]"
-                    style={{ fontVariationSettings: "'FILL' 1" }}>
+                  <span
+                    className="material-symbols-outlined text-secondary text-[20px]"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
                     auto_awesome
                   </span>
                 </div>

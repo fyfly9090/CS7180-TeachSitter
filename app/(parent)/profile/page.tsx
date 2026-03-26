@@ -35,7 +35,10 @@ function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <button className="p-2 rounded-full hover:bg-surface-container transition-colors" aria-label="Notifications">
+          <button
+            className="p-2 rounded-full hover:bg-surface-container transition-colors"
+            aria-label="Notifications"
+          >
             <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
           </button>
           <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
@@ -70,7 +73,9 @@ function MobileBottomNav() {
               }`}
             >
               <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-              <span className="text-[10px] font-semibold uppercase tracking-widest">{item.label}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest">
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -104,7 +109,6 @@ export default function ProfilePage() {
       <Navbar />
       <div className="pt-16 pb-24 md:pb-8 bg-background min-h-screen">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
-
           {/* Profile header card */}
           <div className="bg-surface-container-lowest rounded-2xl p-6 mb-6 border border-outline-variant/20 shadow-sm">
             <div className="flex items-center gap-5 flex-wrap">
@@ -114,11 +118,15 @@ export default function ProfilePage() {
               <div className="flex-1 min-w-0">
                 <h1 className="text-2xl font-bold text-on-surface">Patricia Johnson</h1>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className="material-symbols-outlined text-[14px] text-on-surface-variant">school</span>
+                  <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                    school
+                  </span>
                   <span className="text-sm text-on-surface-variant">Sunshine Preschool</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className="material-symbols-outlined text-[14px] text-on-surface-variant">person</span>
+                  <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                    person
+                  </span>
                   <span className="text-sm text-on-surface-variant font-medium">Parent</span>
                 </div>
               </div>
@@ -130,7 +138,6 @@ export default function ProfilePage() {
 
           {/* Main grid */}
           <div className="lg:grid lg:grid-cols-3 lg:gap-8 mt-2">
-
             {/* Main column: My Children */}
             <div className="lg:col-span-2">
               <h2 className="text-xl font-bold text-on-surface mb-4">My Children</h2>

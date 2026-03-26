@@ -2,6 +2,7 @@
 // Usage: wrap every route handler with withApiHandler().
 // Throw errors.*(msg) anywhere inside the handler — the wrapper serializes them.
 
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
@@ -104,7 +105,9 @@ export function withApiHandler(handler: RouteHandler): RouteHandler {
       return await handler(req, ctx);
     } catch (error) {
       // Known application error — safe to surface code + message
+      // Capture 5xx AppErrors (INTERNAL_ERROR, AI_FAILURE) in Sentry; 4xx are client errors, not actionable
       if (error instanceof AppError) {
+        if (error.httpStatus >= 500) Sentry.captureException(error);
         return NextResponse.json(
           { error: { code: error.code, message: error.message } },
           { status: error.httpStatus }
@@ -121,7 +124,13 @@ export function withApiHandler(handler: RouteHandler): RouteHandler {
       }
 
       // Supabase error — map to AppError, never leak raw DB messages
-      if (error && typeof error === "object" && ("name" in error || "code" in error)) {
+      // Only match AuthApiError (name === "AuthApiError") or PostgrestError (string code field)
+      const isSupabaseError =
+        error &&
+        typeof error === "object" &&
+        (("name" in error && (error as { name: unknown }).name === "AuthApiError") ||
+          ("code" in error && typeof (error as { code: unknown }).code === "string"));
+      if (isSupabaseError) {
         const mapped = mapSupabaseError(error);
         return NextResponse.json(
           { error: { code: mapped.code, message: mapped.message } },
@@ -129,8 +138,8 @@ export function withApiHandler(handler: RouteHandler): RouteHandler {
         );
       }
 
-      // Unknown error — log server-side, return generic 500 to client
-      // Sentry instrumentation picks this up via the SDK
+      // Unknown error — capture in Sentry, log server-side, return generic 500 to client
+      Sentry.captureException(error);
       console.error("[API] Unhandled error:", error);
       return NextResponse.json(
         { error: { code: ErrorCode.INTERNAL_ERROR, message: "An unexpected error occurred" } },

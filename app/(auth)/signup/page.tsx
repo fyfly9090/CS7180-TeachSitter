@@ -87,13 +87,10 @@ export default function SignupPage() {
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-6 py-12">
         <div className="grid lg:grid-cols-12 gap-12 items-start">
-
           {/* ── Left column: editorial / branding ── */}
           <div className="lg:col-span-5 relative">
             {/* Logo */}
-            <p className="font-serif italic font-bold text-2xl text-primary mb-8">
-              TeachSitter
-            </p>
+            <p className="font-serif italic font-bold text-2xl text-primary mb-8">TeachSitter</p>
 
             {/* Headline */}
             <h1 className="font-serif italic text-5xl font-bold text-on-surface leading-tight mb-6">
@@ -102,7 +99,8 @@ export default function SignupPage() {
 
             {/* Subtext */}
             <p className="text-on-surface-variant text-base leading-relaxed mb-12">
-              Connect with your child&apos;s own preschool teacher for trusted care during school breaks.
+              Connect with your child&apos;s own preschool teacher for trusted care during school
+              breaks.
             </p>
 
             {/* Decorative blockquote card */}
@@ -111,13 +109,12 @@ export default function SignupPage() {
                 format_quote
               </span>
               <p className="text-on-surface text-sm leading-relaxed italic mb-4">
-                &ldquo;My daughter was thrilled — she went with Ms. Tara, her very own teacher!&rdquo;
+                &ldquo;My daughter was thrilled — she went with Ms. Tara, her very own
+                teacher!&rdquo;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-sm">
-                    person
-                  </span>
+                  <span className="material-symbols-outlined text-primary text-sm">person</span>
                 </div>
                 <p className="text-xs text-on-surface-variant font-medium">
                   Parent, Sunflower Class
@@ -129,17 +126,13 @@ export default function SignupPage() {
           {/* ── Right column: form card ── */}
           <div className="lg:col-span-7">
             <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-sm border border-outline-variant/20">
-
               {/* Card header */}
-              <h2 className="text-2xl font-bold text-on-surface mb-1">
-                Create your account
-              </h2>
+              <h2 className="text-2xl font-bold text-on-surface mb-1">Create your account</h2>
               <p className="text-sm text-on-surface-variant mb-6">
                 Join TeachSitter to connect with trusted teachers.
               </p>
 
               <form onSubmit={handleSubmit} noValidate className="space-y-5">
-
                 {/* Role selection */}
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-3">
@@ -278,7 +271,10 @@ export default function SignupPage() {
                     onChange={(e) => set("agreed", e.target.checked)}
                     className="mt-0.5 h-4 w-4 rounded border-outline-variant accent-primary cursor-pointer"
                   />
-                  <label htmlFor="terms" className="text-xs text-on-surface-variant leading-relaxed cursor-pointer">
+                  <label
+                    htmlFor="terms"
+                    className="text-xs text-on-surface-variant leading-relaxed cursor-pointer"
+                  >
                     I agree to the{" "}
                     <Link href="/terms" className="text-primary hover:underline">
                       Terms of Service
@@ -326,9 +322,13 @@ export default function SignupPage() {
       <footer className="max-w-5xl mx-auto px-6 pb-8 mt-4">
         <p className="text-xs text-outline text-center">
           © 2026 TeachSitter ·{" "}
-          <Link href="/privacy" className="hover:underline">Privacy</Link>
+          <Link href="/privacy" className="hover:underline">
+            Privacy
+          </Link>
           {" · "}
-          <Link href="/terms" className="hover:underline">Terms</Link>
+          <Link href="/terms" className="hover:underline">
+            Terms
+          </Link>
         </p>
       </footer>
     </div>
