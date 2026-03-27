@@ -22,9 +22,24 @@
       "Bash(git commit *)",
       "Bash(git checkout *)",
       "Bash(git branch *)",
-      "Bash(git pull *)"
+      "Bash(git pull *)",
+      "Bash(git push *)"
     ],
     "ask": ["Bash(curl *)"],
     "deny": ["Bash(rm -rf *)", "Bash(wget *)"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(jq -r '.tool_input.command // \"\"'); if echo \"$CMD\" | grep -q 'git push'; then if ! npm run lint 1>&2; then printf '{\"continue\":false,\"stopReason\":\"Lint failed — fix errors before pushing.\"}'; exit 1; fi; if ! npm run test 1>&2; then printf '{\"continue\":false,\"stopReason\":\"Tests failed — fix errors before pushing.\"}'; exit 1; fi; if ! npm run build 1>&2; then printf '{\"continue\":false,\"stopReason\":\"Build failed — fix errors before pushing.\"}'; exit 1; fi; fi",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
   }
 }
