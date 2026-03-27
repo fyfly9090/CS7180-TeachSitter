@@ -29,10 +29,7 @@ export async function runMatch(
     ranked = await Promise.any([rankGemini(input), rankClaude(input)]);
   } catch {
     // Both providers failed — use deterministic fallback
-    ranked = await matchTeachers(
-      { child_classroom: input.child_classroom },
-      input.teachers
-    );
+    ranked = await matchTeachers({ child_classroom: input.child_classroom }, input.teachers);
   }
 
   // 2. Log to match_evals (judge_score is null until async judge completes)
@@ -63,10 +60,7 @@ async function runJudge(
 ): Promise<void> {
   try {
     const score = await judgeRanking(input, ranked);
-    await supabase
-      .from("match_evals")
-      .update({ judge_score: score })
-      .eq("id", evalId);
+    await supabase.from("match_evals").update({ judge_score: score }).eq("id", evalId);
   } catch {
     // Judge failures are silent — score stays null
   }

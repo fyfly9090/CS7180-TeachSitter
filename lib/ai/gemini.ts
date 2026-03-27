@@ -5,7 +5,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { MatchRequestInput } from "@/lib/validations";
 import type { RankedTeacher } from "@/types";
 
-const RANKING_PROMPT = (input: MatchRequestInput) => `
+const RANKING_PROMPT = (input: MatchRequestInput) =>
+  `
 You are ranking babysitting teachers for a parent.
 Return ONLY valid JSON — an array with no extra text, markdown, or explanation:
 [{"id":"...","name":"...","rank":1,"reasoning":"..."},...]

@@ -25,7 +25,12 @@ vi.mock("../lib/ai/claude", () => ({
 // Keep matchTeachers as a real deterministic fallback (no AI needed)
 vi.mock("../lib/ai/match", () => ({
   matchTeachers: vi.fn().mockResolvedValue([
-    { id: "550e8400-e29b-41d4-a716-446655440010", name: "Tara", rank: 1, reasoning: "Same classroom." },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440010",
+      name: "Tara",
+      rank: 1,
+      reasoning: "Same classroom.",
+    },
   ]),
 }));
 
@@ -119,8 +124,8 @@ describe("POST /api/match — auth + validation", () => {
 
   test("returns 400 when parent_id is missing", async () => {
     mockSupabase(PARENT_USER);
-    const { parent_id: _, ...body } = VALID_BODY;
-    const res = await POST(makePostRequest(body));
+    const { child_classroom, start_date, end_date, teachers } = VALID_BODY;
+    const res = await POST(makePostRequest({ child_classroom, start_date, end_date, teachers }));
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error.code).toBe("INVALID_INPUT");
@@ -128,8 +133,8 @@ describe("POST /api/match — auth + validation", () => {
 
   test("returns 400 when child_classroom is missing", async () => {
     mockSupabase(PARENT_USER);
-    const { child_classroom: _, ...body } = VALID_BODY;
-    const res = await POST(makePostRequest(body));
+    const { parent_id, start_date, end_date, teachers } = VALID_BODY;
+    const res = await POST(makePostRequest({ parent_id, start_date, end_date, teachers }));
     expect(res.status).toBe(400);
   });
 
@@ -213,7 +218,11 @@ describe("POST /api/match — AI race", () => {
     const body = await res.json();
     const first = body.ranked_teachers[0];
 
-    expect(first).toMatchObject({ id: expect.any(String), rank: expect.any(Number), reasoning: expect.any(String) });
+    expect(first).toMatchObject({
+      id: expect.any(String),
+      rank: expect.any(Number),
+      reasoning: expect.any(String),
+    });
   });
 });
 

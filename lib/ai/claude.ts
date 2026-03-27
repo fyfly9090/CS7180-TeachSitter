@@ -5,7 +5,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { MatchRequestInput } from "@/lib/validations";
 import type { RankedTeacher } from "@/types";
 
-const RANKING_PROMPT = (input: MatchRequestInput) => `
+const RANKING_PROMPT = (input: MatchRequestInput) =>
+  `
 You are ranking babysitting teachers for a parent.
 Return ONLY valid JSON — an array with no extra text, markdown, or explanation:
 [{"id":"...","name":"...","rank":1,"reasoning":"..."},...]
@@ -17,7 +18,8 @@ Teachers:
 ${JSON.stringify(input.teachers, null, 2)}
 `.trim();
 
-const JUDGE_PROMPT = (input: MatchRequestInput, ranked: RankedTeacher[]) => `
+const JUDGE_PROMPT = (input: MatchRequestInput, ranked: RankedTeacher[]) =>
+  `
 Given this parent's needs and these teachers, is the ranking reasonable? Score 0-10 with reasoning.
 Return ONLY valid JSON: {"score": <number>, "reasoning": "..."}
 
@@ -42,7 +44,10 @@ export async function rankTeachers(input: MatchRequestInput): Promise<RankedTeac
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected response type from Claude");
 
-  const text = block.text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const text = block.text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
   return JSON.parse(text) as RankedTeacher[];
 }
 
@@ -63,7 +68,10 @@ export async function judgeRanking(
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected response type from Claude judge");
 
-  const text = block.text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const text = block.text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
   const { score } = JSON.parse(text) as { score: number };
   return score;
 }
