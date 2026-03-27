@@ -38,7 +38,7 @@ export const redis = {
 
 export default redis;
 
-// Cache key format: teachers:available:{start_date}:{end_date}:{classroom}:{name}
+// Cache key format: avail:{start_date}:{end_date}:{classroom}:{name}
 // Empty string used for absent optional params to keep key structure stable.
 export function buildCacheKey(params: {
   start_date: string;
@@ -47,7 +47,7 @@ export function buildCacheKey(params: {
   name?: string;
 }): string {
   return [
-    "teachers:available",
+    "avail",
     params.start_date,
     params.end_date,
     params.classroom ?? "",
