@@ -102,39 +102,56 @@ export interface ApiError {
 // Replace body with generated types once Supabase project is linked.
 // =====================
 
+// Supabase SDK v2.99+ requires Row/Insert/Update to satisfy Record<string, unknown>.
+// Intersection with { [key: string]: unknown } satisfies this constraint while
+// preserving specific field types. Replace with `supabase gen types typescript`
+// output once the project is linked.
+type DbRow<T> = T & { [key: string]: unknown };
+
 export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: Profile;
-        Insert: Omit<Profile, "created_at">;
-        Update: Partial<Omit<Profile, "id">>;
+        Row: DbRow<Profile>;
+        Insert: DbRow<Omit<Profile, "created_at">>;
+        Update: DbRow<Partial<Omit<Profile, "id">>>;
+        Relationships: [];
       };
       teachers: {
-        Row: Teacher;
-        Insert: Omit<Teacher, "id" | "created_at">;
-        Update: Partial<Omit<Teacher, "id" | "user_id" | "created_at">>;
+        Row: DbRow<Teacher>;
+        Insert: DbRow<Omit<Teacher, "id" | "created_at">>;
+        Update: DbRow<Partial<Omit<Teacher, "id" | "user_id" | "created_at">>>;
+        Relationships: [];
       };
       availability: {
-        Row: Availability;
-        Insert: Omit<Availability, "id" | "created_at">;
-        Update: Partial<Pick<Availability, "start_date" | "end_date" | "is_booked">>;
+        Row: DbRow<Availability>;
+        Insert: DbRow<Omit<Availability, "id" | "created_at">>;
+        Update: DbRow<Partial<Pick<Availability, "start_date" | "end_date" | "is_booked">>>;
+        Relationships: [];
       };
       children: {
-        Row: Child;
-        Insert: Omit<Child, "id" | "created_at">;
-        Update: Partial<Pick<Child, "classroom" | "age">>;
+        Row: DbRow<Child>;
+        Insert: DbRow<Omit<Child, "id" | "created_at">>;
+        Update: DbRow<Partial<Pick<Child, "classroom" | "age">>>;
+        Relationships: [];
       };
       bookings: {
-        Row: Booking;
-        Insert: Omit<Booking, "id" | "created_at">;
-        Update: Partial<Pick<Booking, "status">>;
+        Row: DbRow<Booking>;
+        Insert: DbRow<Omit<Booking, "id" | "created_at">>;
+        Update: DbRow<Partial<Pick<Booking, "status">>>;
+        Relationships: [];
       };
       match_evals: {
-        Row: MatchEval;
-        Insert: Omit<MatchEval, "id" | "created_at">;
-        Update: Partial<Pick<MatchEval, "judge_score">>;
+        Row: DbRow<MatchEval>;
+        Insert: DbRow<Omit<MatchEval, "id" | "created_at">>;
+        Update: DbRow<Partial<Pick<MatchEval, "judge_score">>>;
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+    PostgrestVersion: "12";
   };
 }
