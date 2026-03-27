@@ -9,6 +9,7 @@
 ## Scope
 
 Two new endpoints:
+
 - `POST /api/match` — AI ranking, eval logging, async judge
 - `GET /api/evals` — admin-only paginated eval history
 
@@ -33,11 +34,13 @@ __tests__/api-evals.test.ts   ← new: TDD tests for /api/evals
 ### `lib/ai/gemini.ts` + `lib/ai/claude.ts`
 
 Both export the same interface (Strategy pattern):
+
 ```typescript
-export async function rankTeachers(input: MatchRequestInput): Promise<RankedTeacher[]>
+export async function rankTeachers(input: MatchRequestInput): Promise<RankedTeacher[]>;
 ```
 
 Internally:
+
 1. Build a structured prompt
 2. Call the model API
 3. Extract the JSON array from the response text
@@ -45,6 +48,7 @@ Internally:
 5. Throw on parse failure (caller catches and falls through)
 
 Prompt template (same for both providers):
+
 ```
 You are ranking babysitting teachers for a parent.
 Return ONLY valid JSON — an array with no extra text:
@@ -63,10 +67,11 @@ Teachers:
 export async function runMatch(
   input: MatchRequestInput,
   supabase: SupabaseClient
-): Promise<{ ranked_teachers: RankedTeacher[]; eval_id: string }>
+): Promise<{ ranked_teachers: RankedTeacher[]; eval_id: string }>;
 ```
 
 Steps:
+
 1. `Promise.any([rankTeachersGemini(input), rankTeachersClaud(input)])` — first success wins
 2. If both fail → fallback to `matchTeachers()` from `lib/ai/match.ts`
 3. Insert row into `match_evals` → get `eval_id`
@@ -81,7 +86,7 @@ async function runJudge(
   input: MatchRequestInput,
   ranked: RankedTeacher[],
   supabase: SupabaseClient
-): Promise<void>
+): Promise<void>;
 ```
 
 - Call Claude with judge prompt from PRD
@@ -97,7 +102,7 @@ export const POST = withApiHandler(async (req) => {
   // 2. Parse body with matchRequestSchema
   // 3. await runMatch(input, supabase)
   // 4. return NextResponse.json({ ranked_teachers, eval_id })
-})
+});
 ```
 
 ### `app/api/evals/route.ts`
@@ -109,7 +114,7 @@ export const GET = withApiHandler(async (req) => {
   // 3. Supabase: select(*) from match_evals, order by created_at desc, range(offset, offset+limit-1)
   // 4. Count total: select(count) from match_evals
   // 5. return NextResponse.json({ evals, total })
-})
+});
 ```
 
 ---
@@ -121,6 +126,7 @@ export const GET = withApiHandler(async (req) => {
 Mock: `@sentry/nextjs`, `../lib/supabase/server`, `../lib/ai/gemini`, `../lib/ai/claude`, `../lib/ai/match`
 
 **Route handler tests:**
+
 - 401 when unauthenticated
 - 403 when user is teacher (not parent)
 - 400 when required fields missing (parent_id, child_classroom, dates, teachers)

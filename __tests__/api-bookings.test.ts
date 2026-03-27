@@ -101,10 +101,7 @@ function makeChain(finalResult: { data: unknown; error: unknown }): MockChain {
  * Mock createServerClient with auth + a sequence of from() responses.
  * Each element in fromResults maps to one .from() call in order.
  */
-function mockSupabase(
-  user: object | null,
-  fromResults: Array<{ data: unknown; error: unknown }>
-) {
+function mockSupabase(user: object | null, fromResults: Array<{ data: unknown; error: unknown }>) {
   let callIndex = 0;
   vi.mocked(createServerClient).mockResolvedValue({
     auth: {
@@ -159,9 +156,7 @@ describe("POST /api/bookings — input validation", () => {
 
   test("returns 400 when teacher_id is missing", async () => {
     mockSupabase(PARENT_USER, []);
-    const res = await POST(
-      makePostRequest({ start_date: "2026-06-16", end_date: "2026-06-20" })
-    );
+    const res = await POST(makePostRequest({ start_date: "2026-06-16", end_date: "2026-06-20" }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error.code).toBe("INVALID_INPUT");
@@ -170,7 +165,11 @@ describe("POST /api/bookings — input validation", () => {
   test("returns 400 when teacher_id is not a valid UUID", async () => {
     mockSupabase(PARENT_USER, []);
     const res = await POST(
-      makePostRequest({ teacher_id: "not-a-uuid", start_date: "2026-06-16", end_date: "2026-06-20" })
+      makePostRequest({
+        teacher_id: "not-a-uuid",
+        start_date: "2026-06-16",
+        end_date: "2026-06-20",
+      })
     );
     expect(res.status).toBe(400);
   });
@@ -178,7 +177,10 @@ describe("POST /api/bookings — input validation", () => {
   test("returns 400 when start_date is missing", async () => {
     mockSupabase(PARENT_USER, []);
     const res = await POST(
-      makePostRequest({ teacher_id: "550e8400-e29b-41d4-a716-446655440010", end_date: "2026-06-20" })
+      makePostRequest({
+        teacher_id: "550e8400-e29b-41d4-a716-446655440010",
+        end_date: "2026-06-20",
+      })
     );
     expect(res.status).toBe(400);
   });

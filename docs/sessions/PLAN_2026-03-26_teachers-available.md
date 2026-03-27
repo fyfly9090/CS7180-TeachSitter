@@ -9,16 +9,19 @@
 ## Requirements (from issue #11)
 
 **Supabase query:**
+
 - Join `teachers → availability` where `availability.start_date <= start_date AND availability.end_date >= end_date AND availability.is_booked = false`
 - Optional filter: `teachers.classroom ILIKE %classroom%`
 - Optional filter: teacher name partial match
 
 **Redis caching:**
+
 - Cache key: `avail:{start_date}:{end_date}:{classroom}:{name}`
 - TTL: 5 minutes
 - Cache-first; bypass (fail open) if Redis unavailable
 
 **Acceptance criteria:**
+
 1. Returns matching teachers with availability array
 2. `classroom` and `name` filters applied when provided
 3. Results cached in Redis for 5 minutes with correct key
@@ -32,14 +35,17 @@
 ## Implementation Plan
 
 ### Step 1 — Fix `lib/redis/client.ts` cache key prefix
+
 Change `buildCacheKey` from `teachers:available:{...}` → `avail:{...}` to match issue spec and existing test.
 
 ### Step 2 — TDD RED: Expand `__tests__/api-teachers-available.test.ts`
+
 Write all missing tests **before** implementation. Run to confirm RED.
 
 Tests to add (mock `lib/redis/client` and `lib/supabase/server`):
 
 **`getAvailableTeachers` unit tests:**
+
 - Cache hit: returns parsed Redis data, Supabase not called
 - Cache miss: calls Supabase, stores result in Redis, returns teachers
 - Classroom filter: Supabase query includes ilike filter when `classroom` provided
@@ -50,6 +56,7 @@ Tests to add (mock `lib/redis/client` and `lib/supabase/server`):
 - Cache key includes all 4 params
 
 **Route handler tests (`app/api/teachers/available/route.ts`):**
+
 - 400 when `start_date` missing
 - 400 when `end_date` missing
 - 400 when `end_date` before `start_date`
@@ -65,7 +72,9 @@ import { buildCacheKey, redis, CACHE_TTL_SECONDS } from "@/lib/redis/client";
 import { createServerClient } from "@/lib/supabase/server";
 import type { TeacherWithAvailability } from "@/types";
 
-export async function getAvailableTeachers(query: TeachersAvailableQuery): Promise<{ teachers: TeacherWithAvailability[] }> {
+export async function getAvailableTeachers(
+  query: TeachersAvailableQuery
+): Promise<{ teachers: TeacherWithAvailability[] }> {
   const cacheKey = buildCacheKey(query);
 
   // 1. Cache-first: try Redis (fail open on error)
@@ -80,17 +89,19 @@ export async function getAvailableTeachers(query: TeachersAvailableQuery): Promi
   const supabase = await createServerClient();
   const { data, error } = await supabase
     .from("teachers")
-    .select(`
+    .select(
+      `
       id, user_id, classroom, bio, created_at,
       profiles!inner (email),
       availability!inner (start_date, end_date)
-    `)
+    `
+    )
     .lte("availability.start_date", query.start_date)
     .gte("availability.end_date", query.end_date)
-    .eq("availability.is_booked", false)
-    // optional filters applied conditionally
+    .eq("availability.is_booked", false);
+  // optional filters applied conditionally
 
-  if (error) throw errors.internal();  // never leak DB errors
+  if (error) throw errors.internal(); // never leak DB errors
 
   // 3. Shape response
   const teachers: TeacherWithAvailability[] = data.map((row) => ({
@@ -125,7 +136,9 @@ export async function getAvailableTeachers(query: TeachersAvailableQuery): Promi
 export const GET = withApiHandler(async (req: Request) => {
   // Auth: check user is authenticated + parent role
   const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw errors.unauthorized();
   if (user.user_metadata.role !== "parent") throw errors.forbidden();
 
@@ -151,12 +164,12 @@ export const GET = withApiHandler(async (req: Request) => {
 
 ## Files Modified / Created
 
-| File | Action |
-|------|--------|
-| `lib/redis/client.ts` | Update `buildCacheKey` prefix |
-| `__tests__/api-teachers-available.test.ts` | Expand to full test suite |
-| `lib/api/teachers-available.ts` | Replace stub with real implementation |
-| `app/api/teachers/available/route.ts` | Create new route handler |
+| File                                       | Action                                |
+| ------------------------------------------ | ------------------------------------- |
+| `lib/redis/client.ts`                      | Update `buildCacheKey` prefix         |
+| `__tests__/api-teachers-available.test.ts` | Expand to full test suite             |
+| `lib/api/teachers-available.ts`            | Replace stub with real implementation |
+| `app/api/teachers/available/route.ts`      | Create new route handler              |
 
 ---
 

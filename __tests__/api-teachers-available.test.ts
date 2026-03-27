@@ -21,9 +21,13 @@ vi.mock("../lib/redis/client", () => {
     redis: redisMock,
     buildCacheKey: vi.fn(
       (params: { start_date: string; end_date: string; classroom?: string; name?: string }) =>
-        ["avail", params.start_date, params.end_date, params.classroom ?? "", params.name ?? ""].join(
-          ":"
-        )
+        [
+          "avail",
+          params.start_date,
+          params.end_date,
+          params.classroom ?? "",
+          params.name ?? "",
+        ].join(":")
     ),
     CACHE_TTL_SECONDS: 300,
   };
@@ -93,10 +97,7 @@ function mockSupabaseQuery(chain: ReturnType<typeof makeQueryChain>) {
 }
 
 /** Mock createServerClient for route auth + optional query chain */
-function mockSupabaseWithAuth(
-  user: object | null,
-  queryChain?: ReturnType<typeof makeQueryChain>
-) {
+function mockSupabaseWithAuth(user: object | null, queryChain?: ReturnType<typeof makeQueryChain>) {
   vi.mocked(createServerClient).mockResolvedValue({
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }),
@@ -278,9 +279,9 @@ describe("getAvailableTeachers — Supabase query", () => {
   test("throws INTERNAL_ERROR on Supabase error (does not leak DB details)", async () => {
     vi.mocked(redis.get).mockResolvedValue(null);
     vi.mocked(createServerClient).mockResolvedValue({
-      from: vi.fn().mockReturnValue(
-        makeQueryChain(null, { code: "PGRST116", message: "Not found" })
-      ),
+      from: vi
+        .fn()
+        .mockReturnValue(makeQueryChain(null, { code: "PGRST116", message: "Not found" })),
     } as never);
 
     await expect(
@@ -330,17 +331,13 @@ describe("GET /api/teachers/available — route handler", () => {
 
   test("returns 401 when user is unauthenticated", async () => {
     mockSupabaseWithAuth(null);
-    const res = await GET(
-      makeGetRequest({ start_date: "2026-06-16", end_date: "2026-06-20" })
-    );
+    const res = await GET(makeGetRequest({ start_date: "2026-06-16", end_date: "2026-06-20" }));
     expect(res.status).toBe(401);
   });
 
   test("returns 403 when authenticated user is a teacher (not parent)", async () => {
     mockSupabaseWithAuth(TEACHER_USER);
-    const res = await GET(
-      makeGetRequest({ start_date: "2026-06-16", end_date: "2026-06-20" })
-    );
+    const res = await GET(makeGetRequest({ start_date: "2026-06-16", end_date: "2026-06-20" }));
     expect(res.status).toBe(403);
   });
 
@@ -350,9 +347,7 @@ describe("GET /api/teachers/available — route handler", () => {
     vi.mocked(redis.get).mockResolvedValue(JSON.stringify({ teachers: [SHAPED_TEACHER] }));
     mockSupabaseWithAuth(PARENT_USER);
 
-    const res = await GET(
-      makeGetRequest({ start_date: "2026-06-16", end_date: "2026-06-20" })
-    );
+    const res = await GET(makeGetRequest({ start_date: "2026-06-16", end_date: "2026-06-20" }));
 
     expect(res.status).toBe(200);
     const body = await res.json();
