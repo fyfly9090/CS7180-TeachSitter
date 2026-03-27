@@ -25,7 +25,7 @@ vi.mock("../lib/ai/claude", () => ({
 // Keep matchTeachers as a real deterministic fallback (no AI needed)
 vi.mock("../lib/ai/match", () => ({
   matchTeachers: vi.fn().mockResolvedValue([
-    { id: "t-1", name: "Tara", rank: 1, reasoning: "Same classroom." },
+    { id: "550e8400-e29b-41d4-a716-446655440010", name: "Tara", rank: 1, reasoning: "Same classroom." },
   ]),
 }));
 
@@ -45,18 +45,20 @@ import { POST } from "../app/api/match/route";
 const PARENT_UID = "550e8400-e29b-41d4-a716-446655440001";
 const TEACHER_UID = "550e8400-e29b-41d4-a716-446655440002";
 const EVAL_ID = "550e8400-e29b-41d4-a716-446655440099";
+const T1_ID = "550e8400-e29b-41d4-a716-446655440010";
+const T2_ID = "550e8400-e29b-41d4-a716-446655440011";
 
 const PARENT_USER = { id: PARENT_UID, user_metadata: { role: "parent" } };
 const TEACHER_USER = { id: TEACHER_UID, user_metadata: { role: "teacher" } };
 
 const TEACHERS_INPUT = [
-  { id: "t-1", name: "Tara Smith", classroom: "Sunflower", bio: "Loves art." },
-  { id: "t-2", name: "Bob Jones", classroom: "Rose", bio: "Loves music." },
+  { id: T1_ID, name: "Tara Smith", classroom: "Sunflower", bio: "Loves art." },
+  { id: T2_ID, name: "Bob Jones", classroom: "Rose", bio: "Loves music." },
 ];
 
 const RANKED_RESULT = [
-  { id: "t-1", name: "Tara Smith", rank: 1, reasoning: "Same classroom as child." },
-  { id: "t-2", name: "Bob Jones", rank: 2, reasoning: "Different classroom." },
+  { id: T1_ID, name: "Tara Smith", rank: 1, reasoning: "Same classroom as child." },
+  { id: T2_ID, name: "Bob Jones", rank: 2, reasoning: "Different classroom." },
 ];
 
 const VALID_BODY = {
