@@ -33,9 +33,14 @@ vi.mock("../lib/redis/client", () => {
   };
 });
 
-// Mock Supabase server client
+// Mock Supabase server client (used by route handler for auth)
 vi.mock("../lib/supabase/server", () => ({
   createServerClient: vi.fn(),
+}));
+
+// Mock Supabase service client (used by getAvailableTeachers for DB query)
+vi.mock("../lib/supabase/service", () => ({
+  createServiceClient: vi.fn(),
 }));
 
 // ---------------------------------------------------------------------------
@@ -44,6 +49,7 @@ vi.mock("../lib/supabase/server", () => ({
 
 import redis, { buildCacheKey, CACHE_TTL_SECONDS } from "../lib/redis/client";
 import { createServerClient } from "../lib/supabase/server";
+import { createServiceClient } from "../lib/supabase/service";
 import { getAvailableTeachers } from "../lib/api/teachers-available";
 import { GET } from "../app/api/teachers/available/route";
 
@@ -88,9 +94,9 @@ function makeQueryChain(rows: object[] | null, error: object | null = null) {
   return chain;
 }
 
-/** Mock createServerClient for Supabase queries (no auth) */
+/** Mock createServiceClient for Supabase DB queries (no auth) */
 function mockSupabaseQuery(chain: ReturnType<typeof makeQueryChain>) {
-  vi.mocked(createServerClient).mockResolvedValue({
+  vi.mocked(createServiceClient).mockReturnValue({
     from: vi.fn().mockReturnValue(chain),
   } as never);
   return chain;
@@ -127,7 +133,7 @@ describe("getAvailableTeachers — cache", () => {
     const result = await getAvailableTeachers({ start_date: "2026-06-16", end_date: "2026-06-20" });
 
     expect(redis.get).toHaveBeenCalledWith("avail:2026-06-16:2026-06-20::");
-    expect(createServerClient).not.toHaveBeenCalled();
+    expect(createServiceClient).not.toHaveBeenCalled();
     expect(result).toEqual(cached);
   });
 
@@ -192,7 +198,7 @@ describe("getAvailableTeachers — Redis fail-open", () => {
     const result = await getAvailableTeachers({ start_date: "2026-06-16", end_date: "2026-06-20" });
 
     expect(result.teachers).toHaveLength(1);
-    expect(createServerClient).toHaveBeenCalled();
+    expect(createServiceClient).toHaveBeenCalled();
   });
 
   test("returns teachers even if Redis.set throws after DB query", async () => {
@@ -278,7 +284,7 @@ describe("getAvailableTeachers — Supabase query", () => {
 
   test("throws INTERNAL_ERROR on Supabase error (does not leak DB details)", async () => {
     vi.mocked(redis.get).mockResolvedValue(null);
-    vi.mocked(createServerClient).mockResolvedValue({
+    vi.mocked(createServiceClient).mockReturnValue({
       from: vi
         .fn()
         .mockReturnValue(makeQueryChain(null, { code: "PGRST116", message: "Not found" })),

@@ -1,7 +1,7 @@
 // Teacher Availability API Logic with Redis Caching
 
 import { buildCacheKey, redis, CACHE_TTL_SECONDS } from "@/lib/redis/client";
-import { createServerClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { errors } from "@/lib/errors";
 import type { TeachersAvailableQuery } from "@/lib/validations";
 import type { TeacherWithAvailability } from "@/types";
@@ -40,8 +40,11 @@ export async function getAvailableTeachers(
     // Redis unavailable — proceed to DB
   }
 
-  // 2. Supabase query: join teachers → availability (filtered) → profiles (for name)
-  const supabase = await createServerClient();
+  // 2. Supabase query: join teachers → availability (filtered) → profiles (for name).
+  // Service role is used here because: auth + role check is already done in the route
+  // handler, and the profiles RLS policy only allows users to read their own profile row,
+  // which would prevent parents from seeing teacher profile emails via the !inner join.
+  const supabase = createServiceClient();
 
   let queryBuilder = supabase
     .from("teachers")
