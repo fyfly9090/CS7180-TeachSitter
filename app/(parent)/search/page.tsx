@@ -22,101 +22,133 @@ function formatDateRange(start: string, end: string): string {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
+// Deterministic colour per teacher so cards don't all look the same
+const AVATAR_PALETTES = [
+  "from-blue-300 to-blue-500",
+  "from-emerald-300 to-emerald-500",
+  "from-violet-300 to-violet-500",
+  "from-rose-300 to-rose-500",
+  "from-amber-300 to-amber-500",
+];
+function avatarGradient(id: string) {
+  const idx = id.charCodeAt(0) % AVATAR_PALETTES.length;
+  return AVATAR_PALETTES[idx];
+}
+
+// ── Navbar ─────────────────────────────────────────────────────────────────
+
 function Navbar() {
   const pathname = usePathname();
 
   const navLinks = [
-    { label: "Find Teachers", href: "/search" },
+    { label: "Search Teachers", href: "/search" },
     { label: "My Bookings", href: "/bookings" },
     { label: "Profile", href: "/profile" },
   ];
 
   return (
-    <header className="fixed top-0 inset-x-0 h-16 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/20 z-50">
-      <div className="max-w-5xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
-        <Link href="/dashboard" className="font-serif italic font-bold text-xl text-primary">
+    <nav className="fixed top-0 w-full z-50 bg-orange-50/85 backdrop-blur-md shadow-sm glass-nav">
+      <div className="flex justify-between items-center w-full px-6 py-4 max-w-7xl mx-auto">
+        <Link
+          href="/dashboard"
+          className="text-2xl font-bold tracking-tight text-blue-900 font-serif"
+        >
           TeachSitter
         </Link>
-        <nav className="hidden md:flex gap-6">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-sm font-medium transition-colors ${
-                pathname === link.href
-                  ? "text-primary font-bold"
-                  : "text-on-surface-variant hover:text-primary"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-8">
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={
+                  isActive
+                    ? "text-blue-700 font-bold border-b-2 border-orange-700 pb-1 hover:text-blue-800 transition-colors duration-200"
+                    : "text-slate-600 font-medium hover:text-blue-800 transition-colors duration-200"
+                }
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-4">
           <button
-            className="p-2 rounded-full hover:bg-surface-container transition-colors"
+            className="p-2 text-slate-600 hover:bg-orange-100 rounded-full transition-colors"
             aria-label="Notifications"
           >
-            <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
+            <span className="material-symbols-outlined">notifications</span>
           </button>
-          <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
+          <button
+            className="p-2 text-slate-600 hover:bg-orange-100 rounded-full transition-colors"
+            aria-label="Messages"
+          >
+            <span className="material-symbols-outlined">chat_bubble</span>
+          </button>
+          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-sm select-none border border-outline-variant/15">
             P
           </div>
         </div>
       </div>
-    </header>
+    </nav>
   );
 }
+
+// ── Mobile bottom nav ───────────────────────────────────────────────────────
 
 function MobileBottomNav() {
   const pathname = usePathname();
 
   const items = [
     { label: "Search", icon: "search", href: "/search" },
-    { label: "Bookings", icon: "bookmark_added", href: "/bookings" },
-    { label: "Profile", icon: "person", href: "/profile" },
+    { label: "Bookings", icon: "event_note", href: "/bookings" },
+    { label: "Inbox", icon: "mail", href: "/inbox" },
+    { label: "Profile", icon: "person_outline", href: "/profile" },
   ];
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 md:hidden bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/20 z-50">
-      <div className="flex justify-around">
-        {items.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-0.5 py-2 px-6 transition-all ${
-                isActive ? "text-primary scale-110" : "text-on-surface-variant"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-              <span className="text-[10px] font-semibold uppercase tracking-widest">
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+    <nav className="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-2 md:hidden bg-orange-50/90 backdrop-blur-lg shadow-[0_-4px_12px_rgba(0,0,0,0.05)] rounded-t-2xl z-50">
+      {items.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={
+              isActive
+                ? "flex flex-col items-center justify-center bg-blue-100 text-blue-900 rounded-xl px-4 py-1"
+                : "flex flex-col items-center justify-center text-slate-500"
+            }
+          >
+            <span className="material-symbols-outlined">{item.icon}</span>
+            <span className="text-xs font-semibold font-body">{item.label}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }
 
+// ── States ──────────────────────────────────────────────────────────────────
+
 function LoadingSkeleton() {
   return (
-    <div data-testid="loading-skeleton" className="flex flex-col gap-4">
+    <div data-testid="loading-skeleton" className="space-y-12">
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 animate-pulse"
+          className="flex flex-col md:flex-row bg-surface-container-lowest rounded-2xl overflow-hidden animate-pulse"
+          style={{ boxShadow: "0 8px 32px rgba(28,28,25,0.06)" }}
         >
-          <div className="flex gap-4">
-            <div className="w-20 h-20 rounded-2xl bg-surface-container flex-shrink-0" />
-            <div className="flex-1 space-y-3">
-              <div className="h-5 bg-surface-container rounded-lg w-1/3" />
-              <div className="h-4 bg-surface-container rounded-lg w-1/4" />
-              <div className="h-4 bg-surface-container rounded-lg w-2/3" />
-              <div className="h-4 bg-surface-container rounded-lg w-1/2" />
+          <div className="md:w-72 h-64 md:h-auto bg-surface-container flex-shrink-0" />
+          <div className="flex-1 p-6 md:p-8 space-y-4">
+            <div className="h-8 bg-surface-container rounded-lg w-1/2" />
+            <div className="h-4 bg-surface-container rounded-lg w-1/3" />
+            <div className="h-20 bg-surface-container rounded-xl w-full" />
+            <div className="flex gap-4 mt-auto pt-4">
+              <div className="h-11 bg-surface-container rounded-xl flex-1" />
+              <div className="h-11 bg-surface-container rounded-xl w-32" />
             </div>
           </div>
         </div>
@@ -127,27 +159,27 @@ function LoadingSkeleton() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <span className="material-symbols-outlined text-5xl text-on-surface-variant mb-4">
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <span className="material-symbols-outlined text-6xl text-on-surface-variant mb-4">
         search_off
       </span>
-      <p className="text-on-surface font-semibold text-lg">
-        No teachers available for these dates.
-      </p>
-      <p className="text-on-surface-variant text-sm mt-1">Try widening your date range.</p>
+      <p className="text-on-surface font-semibold text-xl">No teachers available for these dates.</p>
+      <p className="text-on-surface-variant mt-2">Try widening your date range.</p>
     </div>
   );
 }
 
 function ErrorState() {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <span className="material-symbols-outlined text-5xl text-error mb-4">error_outline</span>
-      <p className="text-on-surface font-semibold text-lg">Something went wrong.</p>
-      <p className="text-on-surface-variant text-sm mt-1">Please try again in a moment.</p>
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <span className="material-symbols-outlined text-6xl text-error mb-4">error_outline</span>
+      <p className="text-on-surface font-semibold text-xl">Something went wrong.</p>
+      <p className="text-on-surface-variant mt-2">Please try again in a moment.</p>
     </div>
   );
 }
+
+// ── Teacher Card ────────────────────────────────────────────────────────────
 
 function TeacherCard({
   teacher,
@@ -165,113 +197,102 @@ function TeacherCard({
     (dateFrom ? `&start_date=${dateFrom}` : "") +
     (dateTo ? `&end_date=${dateTo}` : "");
 
+  const initials = getInitials(teacher.name);
+  const gradient = avatarGradient(teacher.id);
+
   return (
-    <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* Avatar */}
-        <div className="w-20 h-20 rounded-2xl bg-primary-fixed flex items-center justify-center text-primary font-bold text-2xl flex-shrink-0 group-hover:scale-105 transition-transform">
-          {getInitials(teacher.name)}
+    <article
+      className="group relative flex flex-col md:flex-row bg-surface-container-lowest rounded-2xl overflow-hidden transition-transform hover:-translate-y-1"
+      style={{ boxShadow: "0 8px 32px rgba(28,28,25,0.06)" }}
+    >
+      {/* Left photo panel */}
+      <div className="md:w-72 h-64 md:h-auto overflow-hidden relative flex-shrink-0">
+        <div
+          className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}
+        >
+          <span className="text-white font-bold text-6xl select-none drop-shadow-sm">
+            {initials}
+          </span>
         </div>
-
-        {/* Details */}
-        <div className="flex-1">
-          {/* Name + verified badge */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-lg font-bold text-on-surface">{teacher.name}</h3>
-            <span className="bg-primary-fixed text-primary text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-              <span
-                className="material-symbols-outlined text-[12px]"
-                style={{ fontVariationSettings: "'FILL' 1" }}
-              >
-                verified
-              </span>
-              Verified
-            </span>
-          </div>
-
-          {/* Classroom */}
-          <div className="flex items-center gap-1 mt-1">
-            <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-              school
-            </span>
-            <span className="text-sm text-on-surface-variant">{teacher.classroom} Class</span>
-          </div>
-
-          {/* Bio */}
-          <p className="text-sm text-on-surface-variant mt-1 truncate">{teacher.bio}</p>
-
-          {/* Availability row */}
-          {teacher.availability.length > 0 && (
-            <div className="flex items-center gap-4 mt-2 flex-wrap">
-              {teacher.availability.map((slot, i) => (
-                <div key={i} className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-                    calendar_today
-                  </span>
-                  <span className="text-xs text-on-surface-variant">
-                    {formatDateRange(slot.start_date, slot.end_date)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* AI reasoning box — only when reasoning is present */}
-          {teacher.reasoning && (
-            <div
-              data-testid="ai-reasoning"
-              className="mt-2 bg-surface-container rounded-xl p-3 border-l-4 border-secondary-container"
+        {/* Verified badge — overlaid on photo */}
+        <div className="absolute top-4 left-4">
+          <span className="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+            <span
+              className="material-symbols-outlined text-[14px]"
+              style={{ fontVariationSettings: "'FILL' 1" }}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <span
-                  className="material-symbols-outlined text-secondary-container text-xl"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  auto_awesome
-                </span>
-                <span className="text-xs font-bold text-on-secondary-container uppercase tracking-tight">
-                  AI Match Reasoning
-                </span>
-              </div>
-              <p className="text-sm text-on-surface leading-relaxed italic">{teacher.reasoning}</p>
-            </div>
-          )}
-
-          {/* Action buttons */}
-          <div className="flex gap-2 mt-3 flex-wrap">
-            <Link
-              href={bookingHref}
-              className="bg-gradient-to-br from-primary to-primary-container text-on-primary px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:opacity-90 active:scale-95 transition-all"
-            >
-              Request Booking
-            </Link>
-            <button className="border border-outline-variant/30 text-primary px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-primary-fixed/20 transition-all">
-              View Profile
-            </button>
-          </div>
+              verified
+            </span>
+            Verified
+          </span>
         </div>
       </div>
-    </div>
+
+      {/* Right content */}
+      <div className="flex-1 p-6 md:p-8 flex flex-col">
+        {/* Name + classroom row */}
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h2 className="font-headline text-3xl text-primary font-bold">{teacher.name}</h2>
+            <p className="text-on-surface-variant font-medium mt-0.5">
+              {teacher.classroom} Class
+            </p>
+          </div>
+          {/* Availability pill */}
+          {teacher.availability.length > 0 && (
+            <div className="text-right flex-shrink-0 ml-4">
+              <div className="text-xs font-semibold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-md">
+                {formatDateRange(
+                  teacher.availability[0].start_date,
+                  teacher.availability[0].end_date
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bio */}
+        <p className="text-sm text-on-surface-variant mb-4 leading-relaxed">{teacher.bio}</p>
+
+        {/* AI reasoning box */}
+        {teacher.reasoning && (
+          <div
+            data-testid="ai-reasoning"
+            className="bg-surface-container p-4 rounded-xl border-l-4 border-secondary-container mb-6"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span
+                className="material-symbols-outlined text-secondary-container text-xl"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                auto_awesome
+              </span>
+              <span className="text-xs font-bold text-on-secondary-container uppercase tracking-tight">
+                AI Match Reasoning
+              </span>
+            </div>
+            <p className="text-sm text-on-surface leading-relaxed italic">{teacher.reasoning}</p>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="mt-auto flex flex-col sm:flex-row gap-4">
+          <Link
+            href={bookingHref}
+            className="flex-1 py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold rounded-xl active:scale-95 transition-all text-center"
+          >
+            Request Booking
+          </Link>
+          <button className="px-6 py-3 border border-outline-variant/30 text-primary font-bold rounded-xl hover:bg-surface-container-low transition-colors">
+            View Profile
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
 
-function TeacherList({
-  teachers,
-  dateFrom,
-  dateTo,
-}: {
-  teachers: TeacherResult[];
-  dateFrom: string;
-  dateTo: string;
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      {teachers.map((teacher) => (
-        <TeacherCard key={teacher.id} teacher={teacher} dateFrom={dateFrom} dateTo={dateTo} />
-      ))}
-    </div>
-  );
-}
+// ── Search Page ─────────────────────────────────────────────────────────────
 
 export default function SearchPage() {
   const [dateFrom, setDateFrom] = useState("");
@@ -318,103 +339,118 @@ export default function SearchPage() {
   return (
     <>
       <Navbar />
-      <div className="pt-16 pb-24 md:pb-8 bg-background min-h-screen">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 pt-8 pb-6">
-          <h1 className="font-headline text-4xl md:text-5xl text-primary font-bold tracking-tight">
+      <main className="pt-24 pb-32 px-4 max-w-5xl mx-auto">
+        {/* Header */}
+        <header className="mb-12">
+          <h1 className="font-headline text-5xl md:text-6xl text-primary font-bold tracking-tight mb-4">
             Find a familiar face
           </h1>
-          <p className="text-lg text-on-surface-variant mt-2 max-w-2xl leading-relaxed">
+          <p className="text-lg text-on-surface-variant max-w-2xl leading-relaxed">
             Choose from teachers your child already knows and loves from their daily classroom
             adventures.
           </p>
+        </header>
 
-          {/* Filter bar */}
-          <div className="bg-surface-container-low rounded-xl p-4 md:p-6 mb-6 mt-6 shadow-sm">
-            <div className="flex flex-col md:flex-row gap-4 items-end">
-              <div className="flex flex-col gap-1.5 w-full md:w-1/3">
-                <label
-                  htmlFor="date-from"
-                  className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider ml-1"
-                >
-                  Date From
-                </label>
-                <div className="relative">
+        {/* Filter Bar */}
+        <section
+          className="bg-surface-container-low rounded-xl p-4 md:p-6 mb-12"
+          style={{ boxShadow: "0 8px 32px rgba(28,28,25,0.06)" }}
+        >
+          <div className="flex flex-col md:flex-row gap-4 items-end">
+            {/* Date range — two inputs under one label group */}
+            <div className="w-full md:w-1/3">
+              <span className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 ml-1">
+                Date Range
+              </span>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[18px]">
                     calendar_today
                   </span>
+                  <label htmlFor="date-from" className="sr-only">
+                    Date From
+                  </label>
                   <input
                     id="date-from"
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm text-on-surface"
+                    className="w-full pl-10 pr-2 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm text-on-surface"
                   />
                 </div>
-              </div>
-              <div className="flex flex-col gap-1.5 w-full md:w-1/3">
-                <label
-                  htmlFor="date-to"
-                  className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider ml-1"
-                >
-                  Date To
-                </label>
-                <div className="relative">
+                <div className="relative flex-1">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[18px]">
                     calendar_today
                   </span>
+                  <label htmlFor="date-to" className="sr-only">
+                    Date To
+                  </label>
                   <input
                     id="date-to"
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm text-on-surface"
+                    className="w-full pl-10 pr-2 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm text-on-surface"
                   />
                 </div>
               </div>
-              <div className="flex flex-col gap-1.5 w-full md:w-1/3">
-                <label
-                  htmlFor="classroom"
-                  className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider ml-1"
+            </div>
+
+            {/* Classroom */}
+            <div className="w-full md:w-1/3">
+              <label
+                htmlFor="classroom"
+                className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 ml-1"
+              >
+                Classroom
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[18px]">
+                  child_care
+                </span>
+                <select
+                  id="classroom"
+                  value={classroom}
+                  onChange={(e) => setClassroom(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm text-on-surface"
                 >
-                  Classroom
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[18px]">
-                    child_care
-                  </span>
-                  <select
-                    id="classroom"
-                    value={classroom}
-                    onChange={(e) => setClassroom(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm text-on-surface"
-                  >
-                    <option value="">All Classrooms</option>
-                    <option value="Sunflower">Sunflower</option>
-                    <option value="Butterfly">Butterfly</option>
-                    <option value="Rainbow">Rainbow</option>
-                  </select>
-                </div>
-              </div>
-              <div className="w-full md:w-auto">
-                <button
-                  onClick={handleUpdateResults}
-                  className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold rounded-xl shadow-lg hover:opacity-90 active:scale-95 transition-all text-sm"
-                >
-                  Update Results
-                </button>
+                  <option value="">All Classrooms</option>
+                  <option value="Sunflower">Sunflower</option>
+                  <option value="Butterfly">Butterfly</option>
+                  <option value="Rainbow">Rainbow</option>
+                </select>
               </div>
             </div>
-          </div>
 
-          {/* Result states */}
-          {loading && <LoadingSkeleton />}
-          {!loading && error && <ErrorState />}
-          {!loading && !error && teachers.length === 0 && <EmptyState />}
-          {!loading && !error && teachers.length > 0 && (
-            <TeacherList teachers={teachers} dateFrom={dateFrom} dateTo={dateTo} />
-          )}
-        </div>
-      </div>
+            {/* Update button */}
+            <div className="w-full md:w-1/3">
+              <button
+                onClick={handleUpdateResults}
+                className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold rounded-xl shadow-lg hover:opacity-90 active:scale-95 transition-all"
+              >
+                Update Results
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Results */}
+        {loading && <LoadingSkeleton />}
+        {!loading && error && <ErrorState />}
+        {!loading && !error && teachers.length === 0 && <EmptyState />}
+        {!loading && !error && teachers.length > 0 && (
+          <div className="space-y-12">
+            {teachers.map((teacher) => (
+              <TeacherCard
+                key={teacher.id}
+                teacher={teacher}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+              />
+            ))}
+          </div>
+        )}
+      </main>
       <MobileBottomNav />
     </>
   );
