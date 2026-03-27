@@ -25,13 +25,13 @@ Replaced hardcoded sample data with a fully connected search page:
 
 18 unit tests in 5 `describe` blocks, one per acceptance criterion:
 
-| Group | Tests |
-|---|---|
-| States | loading skeleton, empty state, error (non-ok), error (throws) |
-| Filter bar | start_date+end_date params, classroom param, "All Classrooms" omits param |
-| Teacher cards | name, classroom, bio, availability dates, verified badge, avatar initials, View Profile button |
-| Request Booking | href = `/bookings/new?teacher_id=...`, date params included in href |
-| AI reasoning | omitted when absent, rendered with text when present |
+| Group           | Tests                                                                                          |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| States          | loading skeleton, empty state, error (non-ok), error (throws)                                  |
+| Filter bar      | start_date+end_date params, classroom param, "All Classrooms" omits param                      |
+| Teacher cards   | name, classroom, bio, availability dates, verified badge, avatar initials, View Profile button |
+| Request Booking | href = `/bookings/new?teacher_id=...`, date params included in href                            |
+| AI reasoning    | omitted when absent, rendered with text when present                                           |
 
 ---
 
@@ -60,6 +60,7 @@ feature/parent-search-ui
 ```
 
 Files changed:
+
 - `app/(parent)/search/page.tsx` — replaced sample data with live API connection
 - `app/(parent)/search/page.test.tsx` — new, 18 tests
 

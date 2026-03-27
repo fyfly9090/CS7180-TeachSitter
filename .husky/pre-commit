@@ -1,0 +1,1 @@
+# No pre-commit checks — lint + test run in pre-push hook

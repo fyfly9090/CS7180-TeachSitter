@@ -43,11 +43,11 @@ Existing search page tests still pass (they use `stringContaining` assertions fo
 
 14 unit tests in 3 `describe` blocks:
 
-| Group | Tests |
-|---|---|
-| Page display | heading, teacher name, classroom, pre-filled start/end dates, message textarea, submit button |
-| Missing teacher_id guard | shows "Invalid booking link" error |
-| Form submission | correct POST body, message included, redirect on success, 409 error shown, network error shown, button disabled while submitting |
+| Group                    | Tests                                                                                                                            |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Page display             | heading, teacher name, classroom, pre-filled start/end dates, message textarea, submit button                                    |
+| Missing teacher_id guard | shows "Invalid booking link" error                                                                                               |
+| Form submission          | correct POST body, message included, redirect on success, 409 error shown, network error shown, button disabled while submitting |
 
 ---
 
