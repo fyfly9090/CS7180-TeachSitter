@@ -4,7 +4,19 @@ import { buildCacheKey, redis, CACHE_TTL_SECONDS } from "@/lib/redis/client";
 import { createServerClient } from "@/lib/supabase/server";
 import { errors } from "@/lib/errors";
 import type { TeachersAvailableQuery } from "@/lib/validations";
-import type { TeacherWithAvailability, Availability } from "@/types";
+import type { TeacherWithAvailability } from "@/types";
+
+// Shape of a row returned by the teachers + profiles + availability join.
+// Cast once at the data level instead of field-by-field assertions.
+interface TeacherRow {
+  id: string;
+  user_id: string;
+  classroom: string;
+  bio: string;
+  created_at: string;
+  profiles: { email: string };
+  availability: { start_date: string; end_date: string }[];
+}
 
 export interface TeachersResponse {
   teachers: TeacherWithAvailability[];
@@ -60,19 +72,15 @@ export async function getAvailableTeachers(
   if (error) throw errors.internal();
 
   // 3. Shape response — map profiles.email → name
-  const teachers: TeacherWithAvailability[] = (data ?? []).map((row) => {
-    const profile = row.profiles as { email: string };
-    const availability = row.availability as Pick<Availability, "start_date" | "end_date">[];
-    return {
-      id: row.id as string,
-      user_id: row.user_id as string,
-      classroom: row.classroom as string,
-      bio: row.bio as string,
-      created_at: row.created_at as string,
-      name: profile.email,
-      availability,
-    };
-  });
+  const teachers: TeacherWithAvailability[] = ((data ?? []) as TeacherRow[]).map((row) => ({
+    id: row.id,
+    user_id: row.user_id,
+    classroom: row.classroom,
+    bio: row.bio,
+    created_at: row.created_at,
+    name: row.profiles.email,
+    availability: row.availability,
+  }));
 
   const result: TeachersResponse = { teachers };
 

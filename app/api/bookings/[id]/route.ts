@@ -5,7 +5,6 @@ import { NextResponse } from "next/server";
 import { withApiHandler, errors } from "@/lib/errors";
 import { updateBookingSchema } from "@/lib/validations";
 import { createServerClient } from "@/lib/supabase/server";
-import type { Booking, Teacher } from "@/types";
 
 export const PATCH = withApiHandler(
   async (req: Request, ctx: unknown) => {
@@ -41,7 +40,7 @@ export const PATCH = withApiHandler(
     if (bookingError || !booking) throw errors.notFound("Booking");
 
     // Verify ownership
-    if ((booking as Pick<Booking, "id" | "teacher_id" | "status">).teacher_id !== (teacher as Pick<Teacher, "id">).id) {
+    if ((booking as { teacher_id: string }).teacher_id !== (teacher as { id: string }).id) {
       throw errors.forbidden();
     }
 

@@ -49,14 +49,9 @@ export const POST = withApiHandler(async (req: Request) => {
 
   if (insertError) throw insertError;
 
-  const response: BookingResponse = {
-    id: (booking as BookingResponse).id,
-    parent_id: (booking as BookingResponse).parent_id,
-    teacher_id: (booking as BookingResponse).teacher_id,
-    start_date: (booking as BookingResponse).start_date,
-    end_date: (booking as BookingResponse).end_date,
-    status: (booking as BookingResponse).status,
-  };
-
-  return NextResponse.json({ booking: response }, { status: 201 });
+  const { id, parent_id, teacher_id, start_date, end_date, status } = booking as BookingResponse;
+  return NextResponse.json(
+    { booking: { id, parent_id, teacher_id, start_date, end_date, status } },
+    { status: 201 }
+  );
 });
