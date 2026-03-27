@@ -56,9 +56,14 @@ export async function getAvailableTeachers(
       availability!inner (start_date, end_date)
     `
     )
-    .lte("availability.start_date", query.start_date)
-    .gte("availability.end_date", query.end_date)
     .eq("availability.is_booked", false);
+
+  if (query.start_date) {
+    queryBuilder = queryBuilder.lte("availability.start_date", query.start_date);
+  }
+  if (query.end_date) {
+    queryBuilder = queryBuilder.gte("availability.end_date", query.end_date);
+  }
 
   if (query.classroom) {
     queryBuilder = queryBuilder.ilike("classroom", `%${query.classroom}%`);
