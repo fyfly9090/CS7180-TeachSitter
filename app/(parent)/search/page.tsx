@@ -206,11 +206,11 @@ function TeacherCard({
       style={{ boxShadow: "0 8px 32px rgba(28,28,25,0.06)" }}
     >
       {/* Left photo panel */}
-      <div className="md:w-72 h-64 md:h-auto overflow-hidden relative flex-shrink-0">
+      <div className="md:w-72 h-56 md:h-auto min-h-[16rem] md:min-h-[20rem] overflow-hidden relative flex-shrink-0">
         <div
           className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}
         >
-          <span className="text-white font-bold text-6xl select-none drop-shadow-sm">
+          <span className="text-white font-bold text-7xl select-none drop-shadow-sm">
             {initials}
           </span>
         </div>
@@ -352,52 +352,54 @@ export default function SearchPage() {
         </header>
 
         {/* Filter Bar */}
-        <section
-          className="bg-surface-container-low rounded-xl p-4 md:p-6 mb-12"
-          style={{ boxShadow: "0 8px 32px rgba(28,28,25,0.06)" }}
-        >
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            {/* Date range — two inputs under one label group */}
-            <div className="w-full md:w-1/3">
-              <span className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 ml-1">
-                Date Range
-              </span>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[18px]">
-                    calendar_today
-                  </span>
-                  <label htmlFor="date-from" className="sr-only">
-                    Date From
-                  </label>
-                  <input
-                    id="date-from"
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-full pl-10 pr-2 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm text-on-surface"
-                  />
-                </div>
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[18px]">
-                    calendar_today
-                  </span>
-                  <label htmlFor="date-to" className="sr-only">
-                    Date To
-                  </label>
-                  <input
-                    id="date-to"
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="w-full pl-10 pr-2 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm text-on-surface"
-                  />
-                </div>
+        <section className="bg-surface-container-low rounded-xl p-4 md:p-6 mb-12 ambient-shadow">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            {/* Date From */}
+            <div>
+              <label
+                htmlFor="date-from"
+                className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 ml-1"
+              >
+                Date From
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[18px]">
+                  calendar_today
+                </span>
+                <input
+                  id="date-from"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full pl-10 pr-3 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm text-on-surface"
+                />
+              </div>
+            </div>
+
+            {/* Date To */}
+            <div>
+              <label
+                htmlFor="date-to"
+                className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 ml-1"
+              >
+                Date To
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-[18px]">
+                  calendar_today
+                </span>
+                <input
+                  id="date-to"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full pl-10 pr-3 py-3 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm text-on-surface"
+                />
               </div>
             </div>
 
             {/* Classroom */}
-            <div className="w-full md:w-1/3">
+            <div>
               <label
                 htmlFor="classroom"
                 className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 ml-1"
@@ -423,7 +425,7 @@ export default function SearchPage() {
             </div>
 
             {/* Update button */}
-            <div className="w-full md:w-1/3">
+            <div>
               <button
                 onClick={handleUpdateResults}
                 className="w-full py-3.5 bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold rounded-xl shadow-lg hover:opacity-90 active:scale-95 transition-all"
