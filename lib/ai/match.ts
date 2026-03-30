@@ -23,24 +23,19 @@ export async function matchTeachers(parent: Parent, teachers: Teacher[]): Promis
 
   const ranked = teachers
     .map((teacher) => {
-      if (!hasClassroom) {
-        return {
-          ...teacher,
-          rank: 1,
-          reasoning: "Available during your requested dates.",
-        };
-      }
-
-      const isSameClassroom = teacher.classroom === parent.child_classroom;
+      const isSameClassroom = hasClassroom && teacher.classroom === parent.child_classroom;
       return {
         ...teacher,
         rank: isSameClassroom ? 1 : 2,
         reasoning: isSameClassroom
           ? `Same classroom as child — highest familiarity.`
-          : `Different classroom — less familiar with child.`,
+          : hasClassroom
+            ? `Different classroom — less familiar with child.`
+            : "Available during your requested dates.",
       };
     })
-    .sort((a, b) => a.rank - b.rank);
+    .sort((a, b) => a.rank - b.rank)
+    .map((teacher, index) => ({ ...teacher, rank: index + 1 }));
 
   return ranked;
 }

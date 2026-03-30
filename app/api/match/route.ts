@@ -20,7 +20,7 @@ export const POST = withApiHandler(async (req: Request) => {
   const body = await req.json();
   const input = matchRequestSchema.parse(body);
 
-  const { ranked_teachers, eval_id } = await runMatch(input, supabase);
+  const { ranked_teachers, eval_id } = await runMatch(input);
 
   return NextResponse.json({ ranked_teachers, eval_id });
 });
