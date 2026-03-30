@@ -68,6 +68,30 @@ test(RED): #14 add failing tests for rank badges and AI ranking loading indicato
 feat(GREEN): #14 client-side AI match call, rank badges, separate loading indicator
 ```
 
+## Bug Fix — Date Filter Overlap Logic (2026-03-30)
+
+### Root Cause
+
+`lib/api/teachers-available.ts` used a _contains_ condition instead of an _overlap_ condition:
+
+```ts
+// Before (wrong — search range must fit entirely inside teacher availability)
+q.lte("availability.start_date", query.start_date);
+q.gte("availability.end_date", query.end_date);
+```
+
+A teacher with availability `2026-06-16→2026-06-20` was invisible when a parent searched `2026-06-10→2026-06-25` because `2026-06-16 ≤ 2026-06-10` is false. This also caused AI matching to silently skip (0 teachers → `wouldRank` false).
+
+```ts
+// After (correct — any overlap is sufficient)
+q.lte("availability.start_date", query.end_date); // teacher starts before search ends
+q.gte("availability.end_date", query.start_date); // teacher ends after search starts
+```
+
+### TDD
+
+Updated the existing incorrect test assertion → confirmed RED (2 failures) → fixed implementation → GREEN (22 tests pass, 126 total).
+
 ## Next Recommendations
 
 - Issue #15 or follow-on: E2E test for the full search→AI-rank UX flow with Playwright

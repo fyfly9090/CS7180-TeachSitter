@@ -53,8 +53,9 @@ async function runQuery(
 ) {
   let q = supabase.from("teachers").select(select).eq("availability.is_booked", false);
 
-  if (query.start_date) q = q.lte("availability.start_date", query.start_date);
-  if (query.end_date) q = q.gte("availability.end_date", query.end_date);
+  // Overlap condition: teacher.start_date ≤ search.end_date AND teacher.end_date ≥ search.start_date
+  if (query.end_date) q = q.lte("availability.start_date", query.end_date);
+  if (query.start_date) q = q.gte("availability.end_date", query.start_date);
   if (query.classroom) q = q.ilike("classroom", `%${query.classroom}%`);
   if (query.name) q = q.ilike("profiles.email", `%${query.name}%`);
 
