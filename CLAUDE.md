@@ -122,7 +122,7 @@ Judge prompt: _"Given this parent's needs and these teachers, is the ranking rea
 
 **Git hooks:** pre-commit runs `lint-staged` (Prettier + ESLint on staged files only) · pre-push runs `prettier --check` + `eslint .` + `npm run test` · Never auto-fix without committing the result
 
-**Git:** Branches `feature/[issue-id]-[slug]` · Commits `feat: #[id] desc` · PRs use "Closes #[id]" · Never push to `main` directly · **Write `IMPLEMENT_*.md` session log before every `git push`**
+**Git:** Branches `feature/[issue-id]-[slug]` · Commits `feat: #[id] desc` · PRs use "Closes #[id]" · Never push to `main` directly
 
 **Testing:** TDD (write tests first) · Vitest for unit/integration · Playwright for E2E · Mock all Supabase + AI calls · >80% coverage via CI · Use `fast-check` for complex logic (AI ranking, validation, permissions)
 
@@ -132,11 +132,21 @@ Judge prompt: _"Given this parent's needs and these teachers, is the ranking rea
 
 ## Session Logging Workflow
 
-**When:** After exploration/planning/major implementations · **Required before every `git push`** · Before `/compact` when context full
+**When:** After exploration/planning/major implementations · Before `/compact` when context full
 
 **Format:** `docs/sessions/[TYPE]_[date/task].md` where TYPE = EXPLORE (findings, decisions, next steps) | PLAN (requirements, design, steps) | IMPLEMENT (what built, decisions, course corrections, git history, test results, next recommendations)
 
 **Context management:** Suggest `/compact` and summarize to file when full · For large features: write `PLAN_*.md` → `/clear` → re-read plan → implement with clean context
+
+## Pre-push Checklist
+
+Before every `git push`, Claude must complete these steps in order:
+
+1. `npm run lint` — 0 errors
+2. `npm run test` — all pass
+3. Write `docs/sessions/IMPLEMENT_[date]_[task].md` — what was built, key decisions, test results
+4. Commit the session log
+5. `git push`
 
 ---
 
