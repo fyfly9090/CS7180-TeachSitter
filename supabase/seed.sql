@@ -205,7 +205,12 @@ INSERT INTO public.teachers (id, user_id, classroom, bio, full_name, position, h
     'Preschool Teacher',
     15.00
   )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+  classroom    = EXCLUDED.classroom,
+  bio          = EXCLUDED.bio,
+  full_name    = EXCLUDED.full_name,
+  position     = EXCLUDED.position,
+  hourly_rate  = EXCLUDED.hourly_rate;
 
 -- =====================
 -- AVAILABILITY (summer break 2026)
