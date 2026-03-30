@@ -31,7 +31,7 @@ export async function runMatch(input: MatchRequestInput): Promise<MatchResult> {
   const admin = createAdminClient();
   const { data: evalRow, error: evalError } = await admin
     .from("match_evals")
-    .insert({ parent_id: input.parent_id, ranked_teachers: ranked })
+    .insert({ parent_id: input.parent_id, ranked_teachers: ranked, judge_score: null })
     .select("id")
     .single();
 
