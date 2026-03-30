@@ -1,12 +1,10 @@
 #!/bin/sh
 
-# 1. Auto-fix Prettier formatting
-echo "▶ pre-push: formatting with Prettier..."
-npx prettier --write . 2>/dev/null
-# Stage any formatting fixes so they're included in the push
-git add -u
+# 1. Verify formatting (don't auto-fix — committed code must already be formatted)
+echo "▶ pre-push: checking formatting..."
+npx prettier --check . || { echo "✗ Prettier check failed — run: npx prettier --write . && git add -u && git commit --amend --no-edit"; exit 1; }
 
-# 2. ESLint (errors only — warnings are pre-existing and non-blocking)
+# 2. ESLint (errors only — warnings are non-blocking)
 echo "▶ pre-push: running ESLint..."
 npx eslint . || { echo "✗ ESLint errors — push aborted"; exit 1; }
 

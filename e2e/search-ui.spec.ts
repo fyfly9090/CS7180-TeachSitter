@@ -25,13 +25,18 @@ test.describe("Parent Search UI — visual demo", () => {
     console.log("Screenshot saved: e2e/screenshots/01-search-results.png");
   });
 
-  test("/search — shows hourly rate and availability times (requires migration 004)", async ({ page }) => {
+  test("/search — shows hourly rate and availability times (requires migration 004)", async ({
+    page,
+  }) => {
     await page.goto(SEARCH_URL);
 
     await expect(page.getByText("Ms. Tara Smith").first()).toBeVisible({ timeout: 10_000 });
 
     // These assertions only pass if a teacher has hourly_rate + start_time/end_time set.
-    const hasRate = await page.getByText(/\$\d+/).isVisible().catch(() => false);
+    const hasRate = await page
+      .getByText(/\$\d+/)
+      .isVisible()
+      .catch(() => false);
     if (hasRate) {
       console.log("✓ hourly rate visible");
     } else {
@@ -53,7 +58,9 @@ test.describe("Parent Search UI — visual demo", () => {
     // Wait for SSR navigation (dev mode can be slow: Redis retry + recompile)
     await page.waitForURL(/classroom=Sunflower/, { timeout: 45_000 });
     // Wait for skeleton to be gone (isPending resolved) then check content
-    await page.waitForSelector('[data-testid="loading-skeleton"]', { state: "hidden", timeout: 45_000 }).catch(() => {});
+    await page
+      .waitForSelector('[data-testid="loading-skeleton"]', { state: "hidden", timeout: 45_000 })
+      .catch(() => {});
     await expect(page.getByText("Ms. Tara Smith").first()).toBeVisible({ timeout: 45_000 });
 
     await page.screenshot({ path: "e2e/screenshots/03-search-filtered.png", fullPage: true });
@@ -76,7 +83,10 @@ test.describe("Parent Search UI — visual demo", () => {
     await expect(page.getByText("Ms. Tara Smith").first()).toBeVisible({ timeout: 10_000 });
 
     // Click the first "Book [name]" link (anchors start with "Book ")
-    await page.getByRole("link", { name: /^Book \w/i }).first().click();
+    await page
+      .getByRole("link", { name: /^Book \w/i })
+      .first()
+      .click();
     await page.waitForURL("**/bookings/new**", { timeout: 5_000 });
 
     await page.screenshot({ path: "e2e/screenshots/05-booking-form.png", fullPage: true });

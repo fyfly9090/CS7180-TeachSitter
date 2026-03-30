@@ -100,15 +100,17 @@ async function seed() {
     }
 
     // 2. Ensure profiles row exists (trigger may have run already)
-    await supabase.from("profiles").upsert(
-      { id: userId, email: teacher.email, role: "teacher" },
-      { onConflict: "id" }
-    );
+    await supabase
+      .from("profiles")
+      .upsert({ id: userId, email: teacher.email, role: "teacher" }, { onConflict: "id" });
 
     // 3. Upsert teacher row
     const { data: teacherRow, error: tErr } = await supabase
       .from("teachers")
-      .upsert({ user_id: userId, classroom: teacher.classroom, bio: teacher.bio }, { onConflict: "user_id" })
+      .upsert(
+        { user_id: userId, classroom: teacher.classroom, bio: teacher.bio },
+        { onConflict: "user_id" }
+      )
       .select("id")
       .single();
 

@@ -21,7 +21,10 @@ const TEACHER_PASSWORD = "E2eTestPass123!";
 
 // ── Supabase REST helpers ────────────────────────────────────────────────────
 
-async function adminPost(path: string, body: object): Promise<{ ok: boolean; status: number; data: unknown }> {
+async function adminPost(
+  path: string,
+  body: object
+): Promise<{ ok: boolean; status: number; data: unknown }> {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
     method: "POST",
     headers: {
@@ -47,9 +50,10 @@ async function restPost(
     Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
     Prefer: upsert ? "resolution=merge-duplicates,return=representation" : "return=representation",
   };
-  const url = upsert && onConflict
-    ? `${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`
-    : `${SUPABASE_URL}/rest/v1/${table}`;
+  const url =
+    upsert && onConflict
+      ? `${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`
+      : `${SUPABASE_URL}/rest/v1/${table}`;
   const res = await fetch(url, {
     method: "POST",
     headers,
@@ -95,7 +99,10 @@ export default async function globalSetup() {
   }
 
   // Resolve teacher's profile id (profile row is created by DB trigger on signup)
-  const profiles = await restGet("profiles", `email=eq.${encodeURIComponent(TEACHER_EMAIL)}&select=id`);
+  const profiles = await restGet(
+    "profiles",
+    `email=eq.${encodeURIComponent(TEACHER_EMAIL)}&select=id`
+  );
   const teacherProfileId = (profiles[0] as { id: string } | undefined)?.id;
   if (!teacherProfileId) throw new Error("Teacher profile not found after user creation");
 
@@ -115,14 +122,21 @@ export default async function globalSetup() {
   );
   if (!teacherRow.ok) {
     // Migrations 004/005 not yet applied — upsert without the new columns
-    console.warn("[global-setup] new columns not found, seeding without them (run migrations 004 + 005)");
+    console.warn(
+      "[global-setup] new columns not found, seeding without them (run migrations 004 + 005)"
+    );
     teacherRow = await restPost(
       "teachers",
-      { user_id: teacherProfileId, classroom: "Sunflower", bio: "5 years teaching preschool. Loves art, music, and outdoor play." },
+      {
+        user_id: teacherProfileId,
+        classroom: "Sunflower",
+        bio: "5 years teaching preschool. Loves art, music, and outdoor play.",
+      },
       true,
       "user_id"
     );
-    if (!teacherRow.ok) throw new Error(`Failed to upsert teacher: ${JSON.stringify(teacherRow.data)}`);
+    if (!teacherRow.ok)
+      throw new Error(`Failed to upsert teacher: ${JSON.stringify(teacherRow.data)}`);
   }
 
   const teacherRows = await restGet("teachers", `user_id=eq.${teacherProfileId}&select=id`);
@@ -145,7 +159,9 @@ export default async function globalSetup() {
     is_booked: false,
   });
   if (!avail.ok) {
-    console.warn("[global-setup] start_time/end_time columns not found, seeding without them (run migration 004)");
+    console.warn(
+      "[global-setup] start_time/end_time columns not found, seeding without them (run migration 004)"
+    );
     avail = await restPost("availability", {
       teacher_id: teacherId,
       start_date: "2026-06-01",

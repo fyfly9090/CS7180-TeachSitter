@@ -42,7 +42,11 @@ function formatTime(t: string): string {
   return m === "00" ? `${display}${ampm}` : `${display}:${m}${ampm}`;
 }
 
-const TEACHER_PHOTOS = ["/teachers/teacher-1.png", "/teachers/teacher-2.png", "/teachers/teacher-3.png"];
+const TEACHER_PHOTOS = [
+  "/teachers/teacher-1.png",
+  "/teachers/teacher-2.png",
+  "/teachers/teacher-3.png",
+];
 function teacherPhoto(id: string): string {
   const idx = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % TEACHER_PHOTOS.length;
   return TEACHER_PHOTOS[idx];
@@ -176,7 +180,9 @@ function EmptyState() {
       <span className="material-symbols-outlined text-6xl text-on-surface-variant mb-4">
         search_off
       </span>
-      <p className="text-on-surface font-semibold text-xl">No teachers available for these dates.</p>
+      <p className="text-on-surface font-semibold text-xl">
+        No teachers available for these dates.
+      </p>
       <p className="text-on-surface-variant mt-2">Try widening your date range.</p>
     </div>
   );
@@ -243,7 +249,9 @@ function TeacherCard({
       <div className="flex-1 p-6 md:p-8 flex flex-col">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h2 className="font-headline text-2xl md:text-3xl text-primary font-bold">{displayName}</h2>
+            <h2 className="font-headline text-2xl md:text-3xl text-primary font-bold">
+              {displayName}
+            </h2>
             <p className="text-on-surface-variant font-medium mt-0.5">
               {position} • {teacher.classroom}
             </p>
@@ -435,12 +443,7 @@ export default function SearchClient({
         {!isPending && !initialError && initialTeachers.length > 0 && (
           <div className="space-y-12">
             {initialTeachers.map((teacher) => (
-              <TeacherCard
-                key={teacher.id}
-                teacher={teacher}
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-              />
+              <TeacherCard key={teacher.id} teacher={teacher} dateFrom={dateFrom} dateTo={dateTo} />
             ))}
           </div>
         )}

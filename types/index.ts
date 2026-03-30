@@ -27,8 +27,8 @@ export interface Teacher {
   classroom: string;
   bio: string;
   hourly_rate: number | null; // e.g. 45.00 — null if not set
-  full_name: string | null;   // e.g. "Ms. Tara Smith" — null if migration 005 not applied
-  position: string | null;    // e.g. "Preschool Teacher" — null if migration 005 not applied
+  full_name: string | null; // e.g. "Ms. Tara Smith" — null if migration 005 not applied
+  position: string | null; // e.g. "Preschool Teacher" — null if migration 005 not applied
   created_at: string;
 }
 

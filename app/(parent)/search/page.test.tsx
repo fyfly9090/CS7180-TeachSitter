@@ -43,7 +43,12 @@ const BASE_TEACHER = {
   created_at: "2026-01-01",
   name: "tara.smith@school.com",
   availability: [
-    { start_date: "2026-06-16", end_date: "2026-06-20", start_time: "16:00:00", end_time: "20:00:00" },
+    {
+      start_date: "2026-06-16",
+      end_date: "2026-06-20",
+      start_time: "16:00:00",
+      end_time: "20:00:00",
+    },
   ],
 };
 
@@ -197,7 +202,10 @@ describe("SearchClient — booking link", () => {
   it("booking link teacher_name uses display name (full_name if set)", () => {
     render(<SearchClient {...DEFAULT_PROPS} />);
     const links = screen.getAllByRole("link", { name: /^book \w/i });
-    expect(links[0]).toHaveAttribute("href", expect.stringContaining("teacher_name=Ms.%20Tara%20Smith"));
+    expect(links[0]).toHaveAttribute(
+      "href",
+      expect.stringContaining("teacher_name=Ms.%20Tara%20Smith")
+    );
   });
 
   it("booking link includes date params from props", () => {

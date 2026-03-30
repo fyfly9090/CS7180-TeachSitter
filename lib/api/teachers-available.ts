@@ -18,7 +18,12 @@ interface TeacherRow {
   position?: string | null;
   created_at: string;
   profiles: { email: string };
-  availability: { start_date: string; end_date: string; start_time?: string | null; end_time?: string | null }[];
+  availability: {
+    start_date: string;
+    end_date: string;
+    start_time?: string | null;
+    end_time?: string | null;
+  }[];
 }
 
 export interface TeachersResponse {
@@ -93,23 +98,25 @@ export async function getAvailableTeachers(
   if (error) throw errors.internal();
 
   // 3. Shape response — map profiles.email → name; new fields default to null if absent
-  const teachers: TeacherWithAvailability[] = ((data ?? []) as unknown as TeacherRow[]).map((row) => ({
-    id: row.id,
-    user_id: row.user_id,
-    classroom: row.classroom,
-    bio: row.bio,
-    hourly_rate: row.hourly_rate ?? null,
-    full_name: row.full_name ?? null,
-    position: row.position ?? null,
-    created_at: row.created_at,
-    name: row.profiles.email,
-    availability: row.availability.map((a) => ({
-      start_date: a.start_date,
-      end_date: a.end_date,
-      start_time: a.start_time ?? null,
-      end_time: a.end_time ?? null,
-    })),
-  }));
+  const teachers: TeacherWithAvailability[] = ((data ?? []) as unknown as TeacherRow[]).map(
+    (row) => ({
+      id: row.id,
+      user_id: row.user_id,
+      classroom: row.classroom,
+      bio: row.bio,
+      hourly_rate: row.hourly_rate ?? null,
+      full_name: row.full_name ?? null,
+      position: row.position ?? null,
+      created_at: row.created_at,
+      name: row.profiles.email,
+      availability: row.availability.map((a) => ({
+        start_date: a.start_date,
+        end_date: a.end_date,
+        start_time: a.start_time ?? null,
+        end_time: a.end_time ?? null,
+      })),
+    })
+  );
 
   const result: TeachersResponse = { teachers };
 
