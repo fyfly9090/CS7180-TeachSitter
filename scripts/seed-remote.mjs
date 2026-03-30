@@ -39,26 +39,77 @@ const TEACHERS = [
   {
     email: "tara.smith@school.com",
     password: "TestPass123!",
+    full_name: "Ms. Tara Smith",
+    position: "Preschool Teacher",
+    hourly_rate: 18.0,
     classroom: "Sunflower",
     bio: "5 years experience with preschoolers. Loves art, music, and outdoor play.",
     availability: [
-      { start_date: "2026-06-15", end_date: "2026-06-30" },
-      { start_date: "2026-07-14", end_date: "2026-07-25" },
+      { start_date: "2026-06-15", end_date: "2026-06-30", start_time: "08:00", end_time: "17:00" },
+      { start_date: "2026-07-14", end_date: "2026-07-25", start_time: "08:00", end_time: "17:00" },
     ],
   },
   {
     email: "rachel.chen@school.com",
     password: "TestPass123!",
+    full_name: "Ms. Rachel Chen",
+    position: "Preschool Teacher",
+    hourly_rate: 16.0,
     classroom: "Butterfly",
     bio: "Certified early childhood educator with a passion for STEM activities.",
-    availability: [{ start_date: "2026-06-15", end_date: "2026-07-04" }],
+    availability: [
+      { start_date: "2026-06-15", end_date: "2026-07-04", start_time: "09:00", end_time: "18:00" },
+    ],
   },
   {
     email: "maya.jones@school.com",
     password: "TestPass123!",
+    full_name: "Ms. Maya Jones",
+    position: "Lead Preschool Teacher",
+    hourly_rate: 20.0,
     classroom: "Rainbow",
     bio: "7 years experience. Storytelling, outdoor adventures, and social skills.",
-    availability: [{ start_date: "2026-06-15", end_date: "2026-08-15" }],
+    availability: [
+      { start_date: "2026-06-15", end_date: "2026-08-15", start_time: "07:30", end_time: "16:30" },
+    ],
+  },
+  {
+    email: "sofia.rivera@school.com",
+    password: "TestPass123!",
+    full_name: "Ms. Sofia Rivera",
+    position: "Preschool Teacher",
+    hourly_rate: 17.0,
+    classroom: "Tulip",
+    bio: "4 years experience. Bilingual (English/Spanish), creative arts and movement specialist.",
+    availability: [
+      { start_date: "2026-06-15", end_date: "2026-07-10", start_time: "08:30", end_time: "17:30" },
+      { start_date: "2026-07-28", end_date: "2026-08-14", start_time: "08:30", end_time: "17:30" },
+    ],
+  },
+  {
+    email: "emily.park@school.com",
+    password: "TestPass123!",
+    full_name: "Ms. Emily Park",
+    position: "Senior Preschool Teacher",
+    hourly_rate: 19.0,
+    classroom: "Sunflower",
+    bio: "6 years experience. Specializes in sensory play and early literacy development.",
+    availability: [
+      { start_date: "2026-06-22", end_date: "2026-08-07", start_time: "08:00", end_time: "16:00" },
+    ],
+  },
+  {
+    email: "james.liu@school.com",
+    password: "TestPass123!",
+    full_name: "Mr. James Liu",
+    position: "Preschool Teacher",
+    hourly_rate: 15.0,
+    classroom: "Rose",
+    bio: "2 years experience. Energetic and caring; focuses on social-emotional learning.",
+    availability: [
+      { start_date: "2026-06-15", end_date: "2026-06-26", start_time: "09:00", end_time: "17:00" },
+      { start_date: "2026-07-06", end_date: "2026-08-15", start_time: "09:00", end_time: "17:00" },
+    ],
   },
 ];
 
@@ -108,7 +159,14 @@ async function seed() {
     const { data: teacherRow, error: tErr } = await supabase
       .from("teachers")
       .upsert(
-        { user_id: userId, classroom: teacher.classroom, bio: teacher.bio },
+        {
+          user_id: userId,
+          classroom: teacher.classroom,
+          bio: teacher.bio,
+          full_name: teacher.full_name,
+          position: teacher.position,
+          hourly_rate: teacher.hourly_rate,
+        },
         { onConflict: "user_id" }
       )
       .select("id")
@@ -134,6 +192,8 @@ async function seed() {
         teacher_id: teacherId,
         start_date: a.start_date,
         end_date: a.end_date,
+        start_time: a.start_time,
+        end_time: a.end_time,
         is_booked: false,
       }));
       const { error: aErr } = await supabase.from("availability").insert(slots);
