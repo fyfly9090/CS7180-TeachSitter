@@ -1,6 +1,7 @@
 // Gemini 1.5 Pro — teacher ranking and eval judging via Google Generative AI SDK.
 // Throws on API error or unparseable response; caller falls through to deterministic fallback.
 
+import { randomInt } from "crypto";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { MatchRequestInput } from "@/lib/validations";
 import type { RankedTeacher } from "@/types";
@@ -37,7 +38,7 @@ function pickGeminiKey(): string {
     .split(",")
     .map((k) => k.trim())
     .filter(Boolean);
-  return keys[Math.floor(Math.random() * keys.length)];
+  return keys[randomInt(keys.length)];
 }
 
 export async function rankTeachers(input: MatchRequestInput): Promise<RankedTeacher[]> {
