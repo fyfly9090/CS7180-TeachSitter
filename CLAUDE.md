@@ -122,7 +122,7 @@ Judge prompt: _"Given this parent's needs and these teachers, is the ranking rea
 
 **Git hooks:** pre-commit runs `lint-staged` (Prettier + ESLint on staged files only) · pre-push runs `prettier --check` + `eslint .` + `npm run test` · Never auto-fix without committing the result
 
-**Git:** Branches `feature/[issue-id]-[slug]` · Commits `feat: #[id] desc` · PRs use "Closes #[id]" · Never push to `main` directly
+**Git:** Branches `feature/[issue-id]-[slug]` · Commits `feat: #[id] desc` · PRs use "Closes #[id]" · Never push to `main` directly · **Write `IMPLEMENT_*.md` session log before every `git push`**
 
 **Testing:** TDD (write tests first) · Vitest for unit/integration · Playwright for E2E · Mock all Supabase + AI calls · >80% coverage via CI · Use `fast-check` for complex logic (AI ranking, validation, permissions)
 
@@ -132,7 +132,7 @@ Judge prompt: _"Given this parent's needs and these teachers, is the ranking rea
 
 ## Session Logging Workflow
 
-**When:** After exploration/planning/major implementations · Before `/compact` when context full
+**When:** After exploration/planning/major implementations · **Required before every `git push`** · Before `/compact` when context full
 
 **Format:** `docs/sessions/[TYPE]_[date/task].md` where TYPE = EXPLORE (findings, decisions, next steps) | PLAN (requirements, design, steps) | IMPLEMENT (what built, decisions, course corrections, git history, test results, next recommendations)
 
@@ -175,6 +175,6 @@ Branch protection enforced. Secrets in GitHub Actions + Vercel dashboard only �
 
 ## Do's and Don'ts
 
-✅ **Do:** Use Shadcn before custom UI · Log `/api/match` I/O to `match_evals` · Cache with Redis (5min TTL) · Store secrets in GitHub/Vercel env only · Fix High/Critical security findings before merge · **Run tests and confirm RED before implementing** · **Write tests BEFORE implementation (strict TDD)** · **Use `fast-check` for complex logic** · **Document sessions to `docs/sessions/` before `/compact`** · **Suggest `/compact` proactively**
+✅ **Do:** Use Shadcn before custom UI · Log `/api/match` I/O to `match_evals` · Cache with Redis (5min TTL) · Store secrets in GitHub/Vercel env only · Fix High/Critical security findings before merge · **Run tests and confirm RED before implementing** · **Write tests BEFORE implementation (strict TDD)** · **Use `fast-check` for complex logic** · **Write `IMPLEMENT_*.md` session log before every `git push`** · **Document sessions to `docs/sessions/` before `/compact`** · **Suggest `/compact` proactively**
 
 🚫 **Don't:** AI calls from client · Skip RLS policies · Use `any` in TypeScript · Magic link/OAuth (email+password only) · Commit `.env*` files · Expose internal errors/stack traces · Merge with open security findings · **Write logic without tests** · **Skip RED confirmation** · **Use only example-based tests for complex logic**
