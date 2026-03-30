@@ -215,11 +215,11 @@ function TeacherCard({
   const photo = teacherPhoto(teacher.id);
 
   const bookingHref =
-    `/bookings/new?teacher_id=${teacher.id}` +
+    `/bookings/new?teacher_id=${encodeURIComponent(teacher.id)}` +
     `&teacher_name=${encodeURIComponent(displayName)}` +
     `&classroom=${encodeURIComponent(teacher.classroom)}` +
-    (dateFrom ? `&start_date=${dateFrom}` : "") +
-    (dateTo ? `&end_date=${dateTo}` : "");
+    (dateFrom ? `&start_date=${encodeURIComponent(dateFrom)}` : "") +
+    (dateTo ? `&end_date=${encodeURIComponent(dateTo)}` : "");
 
   const avail = teacher.availability[0];
 
