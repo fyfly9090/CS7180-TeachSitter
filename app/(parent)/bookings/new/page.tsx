@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -108,7 +108,7 @@ function InvalidLink() {
   );
 }
 
-export default function NewBookingPage() {
+function NewBookingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -305,5 +305,13 @@ export default function NewBookingPage() {
       </div>
       <MobileBottomNav />
     </>
+  );
+}
+
+export default function NewBookingPage() {
+  return (
+    <Suspense>
+      <NewBookingContent />
+    </Suspense>
   );
 }
