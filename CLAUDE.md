@@ -36,17 +36,19 @@ npm run test:coverage                 # Coverage report (target >80%)
 
 ## Tech Stack
 
-| Layer           | Technology                                                     |
-| --------------- | -------------------------------------------------------------- |
-| Frontend        | Next.js 15+ (App Router), React 19, Tailwind CSS v4, Shadcn UI |
-| Backend         | Node.js via Next.js API Routes (Node runtime only — no Edge)   |
-| Database & Auth | Supabase (PostgreSQL, RLS, Email + Password)                   |
-| Caching         | Redis — `/api/teachers/available` only, not primary store      |
-| AI/Matching     | Gemini 1.5 Pro + Claude 3.5 Sonnet (parallel agents)           |
-| Testing         | Vitest + Playwright                                            |
-| CI/CD           | GitHub Actions → Vercel                                        |
-| Monitoring      | Sentry (errors + APM)                                          |
-| Security        | CodeQL (SAST), Snyk (SCA), OWASP ZAP (DAST)                    |
+| Layer            | Technology                                                     | Docs                                                                                                               |
+| ---------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Frontend         | Next.js 15+ (App Router), React 19, Tailwind CSS v4, Shadcn UI | [Next.js](https://nextjs.org/docs) · [Tailwind v4](https://tailwindcss.com/docs) · [Shadcn](https://ui.shadcn.com) |
+| Backend          | Node.js via Next.js API Routes (Node runtime only — no Edge)   | —                                                                                                                  |
+| Database & Auth  | Supabase (PostgreSQL, RLS, Email + Password)                   | [Supabase](https://supabase.com/docs)                                                                              |
+| Caching          | Redis — `/api/teachers/available` only, not primary store      | [ioredis](https://github.com/redis/ioredis)                                                                        |
+| AI/Matching      | Gemini 1.5 Pro + Claude 3.5 Sonnet (parallel agents)           | [Gemini SDK](https://ai.google.dev/gemini-api/docs) · [Anthropic SDK](https://docs.anthropic.com)                  |
+| Testing          | Vitest + Playwright + fast-check                               | [Vitest](https://vitest.dev) · [Playwright](https://playwright.dev) · [fast-check](https://fast-check.dev)         |
+| CI/CD            | GitHub Actions → Vercel                                        | [Actions](https://docs.github.com/en/actions)                                                                      |
+| Monitoring       | Sentry (errors + APM)                                          | [Sentry](https://docs.sentry.io)                                                                                   |
+| Security (CI)    | CodeQL (SAST), Snyk (SCA), OWASP ZAP (DAST)                    | [CodeQL](https://codeql.github.com) · [Snyk](https://snyk.io) · [ZAP](https://www.zaproxy.org)                     |
+| Security (local) | eslint-plugin-security (pre-commit via lint-staged)            | [plugin](https://github.com/eslint-community/eslint-plugin-security)                                               |
+| Git hooks        | Husky + lint-staged                                            | [Husky](https://typicode.github.io/husky) · [lint-staged](https://github.com/lint-staged/lint-staged)              |
 
 ---
 
@@ -118,6 +120,8 @@ Judge prompt: _"Given this parent's needs and these teachers, is the ranking rea
 
 **TypeScript:** No `any`. Zod for all API input validation.
 
+**Git hooks:** pre-commit runs `lint-staged` (Prettier + ESLint on staged files only) · pre-push runs `prettier --check` + `eslint .` + `npm run test` · Never auto-fix without committing the result
+
 **Git:** Branches `feature/[issue-id]-[slug]` · Commits `feat: #[id] desc` · PRs use "Closes #[id]" · Never push to `main` directly
 
 **Testing:** TDD (write tests first) · Vitest for unit/integration · Playwright for E2E · Mock all Supabase + AI calls · >80% coverage via CI · Use `fast-check` for complex logic (AI ranking, validation, permissions)
@@ -163,6 +167,9 @@ Branch protection enforced. Secrets in GitHub Actions + Vercel dashboard only �
 - No `dangerouslySetInnerHTML` · No stack traces to client · Sanitize input before AI calls
 - Block merge on High/Critical CodeQL or Snyk findings
 - OWASP ZAP passive scan on every Vercel preview deploy
+- `encodeURIComponent` on **all** user-controlled values placed in URLs (including date inputs)
+- CodeQL alerts: **fix the code**, do not dismiss — dismissing signals "known issue, won't fix"
+- `eslint-plugin-security` runs locally at pre-commit; it does not replace CodeQL (single-file patterns vs. cross-file taint analysis)
 
 ---
 
