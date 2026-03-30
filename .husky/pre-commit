@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Format and lint only staged files before commit
+echo "▶ pre-commit: formatting and linting staged files..."
+npx lint-staged || { echo "✗ lint-staged failed — commit aborted"; exit 1; }
+
+echo "✓ pre-commit checks passed."

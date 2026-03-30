@@ -26,6 +26,9 @@ export interface Teacher {
   user_id: string; // FK → profiles.id
   classroom: string;
   bio: string;
+  hourly_rate: number | null; // e.g. 45.00 — null if not set
+  full_name: string | null; // e.g. "Ms. Tara Smith" — null if migration 005 not applied
+  position: string | null; // e.g. "Preschool Teacher" — null if migration 005 not applied
   created_at: string;
 }
 
@@ -34,6 +37,8 @@ export interface Availability {
   teacher_id: string;
   start_date: string; // YYYY-MM-DD
   end_date: string; // YYYY-MM-DD
+  start_time: string | null; // HH:MM:SS — null if not set
+  end_time: string | null; // HH:MM:SS — null if not set
   is_booked: boolean;
   created_at: string;
 }
@@ -79,7 +84,7 @@ export interface MatchEval {
 // Teacher as returned to parents in search results (Teacher joined with Availability + name from profile)
 export interface TeacherWithAvailability extends Teacher {
   name: string;
-  availability: Pick<Availability, "start_date" | "end_date">[];
+  availability: Pick<Availability, "start_date" | "end_date" | "start_time" | "end_time">[];
 }
 
 // Booking fields safe to return to either party

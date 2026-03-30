@@ -10,9 +10,31 @@ import { z } from "zod";
 
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format");
 
-// Reusable cross-field refinement: end_date must be >= start_date
-function dateRangeRefinement(data: { start_date: string; end_date: string }, ctx: z.RefinementCtx) {
-  if (data.end_date < data.start_date) {
+// Cross-field refinement: dates must be provided together, and end_date >= start_date.
+function dateRangeRefinement(
+  data: { start_date?: string; end_date?: string },
+  ctx: z.RefinementCtx
+) {
+  const hasStart = Boolean(data.start_date);
+  const hasEnd = Boolean(data.end_date);
+
+  if (hasStart && !hasEnd) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "end_date is required when start_date is provided",
+      path: ["end_date"],
+    });
+    return;
+  }
+  if (hasEnd && !hasStart) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "start_date is required when end_date is provided",
+      path: ["start_date"],
+    });
+    return;
+  }
+  if (data.start_date && data.end_date && data.end_date < data.start_date) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "end_date must be on or after start_date",
@@ -46,8 +68,8 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 export const teachersAvailableQuerySchema = z
   .object({
-    start_date: dateString,
-    end_date: dateString,
+    start_date: dateString.optional(),
+    end_date: dateString.optional(),
     classroom: z.string().max(100).optional(),
     name: z.string().max(100).optional(),
   })

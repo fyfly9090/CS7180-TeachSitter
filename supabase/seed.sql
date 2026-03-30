@@ -87,6 +87,42 @@ INSERT INTO auth.users (
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"role":"teacher"}'::jsonb,
     now(), now(), '', '', '', ''
+  ),
+  -- Teacher 4
+  (
+    '00000000-0000-0000-0000-000000000006',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'teacher4@test.com',
+    crypt('password123', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"role":"teacher"}'::jsonb,
+    now(), now(), '', '', '', ''
+  ),
+  -- Teacher 5
+  (
+    '00000000-0000-0000-0000-000000000007',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'teacher5@test.com',
+    crypt('password123', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"role":"teacher"}'::jsonb,
+    now(), now(), '', '', '', ''
+  ),
+  -- Teacher 6
+  (
+    '00000000-0000-0000-0000-000000000008',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'teacher6@test.com',
+    crypt('password123', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"role":"teacher"}'::jsonb,
+    now(), now(), '', '', '', ''
   )
 ON CONFLICT (id) DO NOTHING;
 
@@ -101,66 +137,141 @@ INSERT INTO public.profiles (id, email, role) VALUES
   ('00000000-0000-0000-0000-000000000002', 'parent2@test.com',  'parent'),
   ('00000000-0000-0000-0000-000000000003', 'teacher1@test.com', 'teacher'),
   ('00000000-0000-0000-0000-000000000004', 'teacher2@test.com', 'teacher'),
-  ('00000000-0000-0000-0000-000000000005', 'teacher3@test.com', 'teacher')
+  ('00000000-0000-0000-0000-000000000005', 'teacher3@test.com', 'teacher'),
+  ('00000000-0000-0000-0000-000000000006', 'teacher4@test.com', 'teacher'),
+  ('00000000-0000-0000-0000-000000000007', 'teacher5@test.com', 'teacher'),
+  ('00000000-0000-0000-0000-000000000008', 'teacher6@test.com', 'teacher')
 ON CONFLICT (id) DO NOTHING;
 
 -- =====================
 -- TEACHER PROFILES
 -- =====================
 
-INSERT INTO public.teachers (id, user_id, classroom, bio) VALUES
+INSERT INTO public.teachers (id, user_id, classroom, bio, full_name, position, hourly_rate) VALUES
   (
     '00000000-0000-0000-0000-000000000010',
     '00000000-0000-0000-0000-000000000003',
     'Sunflower',
-    '5 years experience with preschoolers. Loves art, music, and outdoor play.'
+    '5 years experience with preschoolers. Loves art, music, and outdoor play.',
+    'Ms. Sarah Johnson',
+    'Preschool Teacher',
+    18.00
   ),
   (
     '00000000-0000-0000-0000-000000000011',
     '00000000-0000-0000-0000-000000000004',
     'Rose',
-    '3 years experience. STEM activities and hands-on science specialist.'
+    '3 years experience. STEM activities and hands-on science specialist.',
+    'Ms. Rachel Chen',
+    'Preschool Teacher',
+    16.00
   ),
   (
     '00000000-0000-0000-0000-000000000012',
     '00000000-0000-0000-0000-000000000005',
     'Daisy',
-    '7 years experience. Storytelling, outdoor adventures, and social skills.'
+    '7 years experience. Storytelling, outdoor adventures, and social skills.',
+    'Ms. Maya Jones',
+    'Lead Preschool Teacher',
+    20.00
+  ),
+  -- Teacher 4
+  (
+    '00000000-0000-0000-0000-000000000013',
+    '00000000-0000-0000-0000-000000000006',
+    'Tulip',
+    '4 years experience. Bilingual (English/Spanish), creative arts and movement specialist.',
+    'Ms. Sofia Rivera',
+    'Preschool Teacher',
+    17.00
+  ),
+  -- Teacher 5
+  (
+    '00000000-0000-0000-0000-000000000014',
+    '00000000-0000-0000-0000-000000000007',
+    'Sunflower',
+    '6 years experience. Specializes in sensory play and early literacy development.',
+    'Ms. Emily Park',
+    'Senior Preschool Teacher',
+    19.00
+  ),
+  -- Teacher 6
+  (
+    '00000000-0000-0000-0000-000000000015',
+    '00000000-0000-0000-0000-000000000008',
+    'Rose',
+    '2 years experience. Energetic and caring; focuses on social-emotional learning.',
+    'Mr. James Liu',
+    'Preschool Teacher',
+    15.00
   )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+  classroom    = EXCLUDED.classroom,
+  bio          = EXCLUDED.bio,
+  full_name    = EXCLUDED.full_name,
+  position     = EXCLUDED.position,
+  hourly_rate  = EXCLUDED.hourly_rate;
 
 -- =====================
 -- AVAILABILITY (summer break 2026)
 -- =====================
 
-INSERT INTO public.availability (id, teacher_id, start_date, end_date, is_booked) VALUES
+INSERT INTO public.availability (id, teacher_id, start_date, end_date, is_booked, start_time, end_time) VALUES
   -- Teacher 1 (Sunflower) — two windows
   (
     '00000000-0000-0000-0000-000000000020',
     '00000000-0000-0000-0000-000000000010',
-    '2026-06-15', '2026-06-30', false
+    '2026-06-15', '2026-06-30', false, '08:00', '17:00'
   ),
   (
     '00000000-0000-0000-0000-000000000021',
     '00000000-0000-0000-0000-000000000010',
-    '2026-07-14', '2026-07-25', false
+    '2026-07-14', '2026-07-25', false, '08:00', '17:00'
   ),
   -- Teacher 2 (Rose) — two windows
   (
     '00000000-0000-0000-0000-000000000022',
     '00000000-0000-0000-0000-000000000011',
-    '2026-06-15', '2026-07-04', false
+    '2026-06-15', '2026-07-04', false, '09:00', '18:00'
   ),
   (
     '00000000-0000-0000-0000-000000000023',
     '00000000-0000-0000-0000-000000000011',
-    '2026-07-21', '2026-08-01', false
+    '2026-07-21', '2026-08-01', false, '09:00', '18:00'
   ),
   -- Teacher 3 (Daisy) — full summer
   (
     '00000000-0000-0000-0000-000000000024',
     '00000000-0000-0000-0000-000000000012',
-    '2026-06-15', '2026-08-15', false
+    '2026-06-15', '2026-08-15', false, '07:30', '16:30'
+  ),
+  -- Teacher 4 (Tulip) — two windows
+  (
+    '00000000-0000-0000-0000-000000000025',
+    '00000000-0000-0000-0000-000000000013',
+    '2026-06-15', '2026-07-10', false, '08:30', '17:30'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000026',
+    '00000000-0000-0000-0000-000000000013',
+    '2026-07-28', '2026-08-14', false, '08:30', '17:30'
+  ),
+  -- Teacher 5 (Sunflower) — one window
+  (
+    '00000000-0000-0000-0000-000000000027',
+    '00000000-0000-0000-0000-000000000014',
+    '2026-06-22', '2026-08-07', false, '08:00', '16:00'
+  ),
+  -- Teacher 6 (Rose) — two windows
+  (
+    '00000000-0000-0000-0000-000000000028',
+    '00000000-0000-0000-0000-000000000015',
+    '2026-06-15', '2026-06-26', false, '09:00', '17:00'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000029',
+    '00000000-0000-0000-0000-000000000015',
+    '2026-07-06', '2026-08-15', false, '09:00', '17:00'
   )
 ON CONFLICT (id) DO NOTHING;
 
