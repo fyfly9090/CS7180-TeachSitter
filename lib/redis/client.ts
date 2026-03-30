@@ -12,8 +12,12 @@ export function getRedisClient(): Redis {
 
     redisInstance = new Redis(url, {
       lazyConnect: true,
-      maxRetriesPerRequest: 3,
-      retryStrategy: (times) => Math.min(times * 50, 2000),
+      connectTimeout: 500,
+      maxRetriesPerRequest: 1,
+      retryStrategy: (times) => {
+        if (times > 2) return null; // stop retrying — Redis is down, fail-open
+        return Math.min(times * 50, 200);
+      },
     });
   }
   return redisInstance;
@@ -41,15 +45,15 @@ export default redis;
 // Cache key format: avail:{start_date}:{end_date}:{classroom}:{name}
 // Empty string used for absent optional params to keep key structure stable.
 export function buildCacheKey(params: {
-  start_date: string;
-  end_date: string;
+  start_date?: string;
+  end_date?: string;
   classroom?: string;
   name?: string;
 }): string {
   return [
     "avail",
-    params.start_date,
-    params.end_date,
+    params.start_date ?? "",
+    params.end_date ?? "",
     params.classroom ?? "",
     params.name ?? "",
   ].join(":");

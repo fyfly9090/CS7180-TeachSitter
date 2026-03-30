@@ -178,7 +178,7 @@ describe("getAvailableTeachers — cache", () => {
     const stored = JSON.parse(vi.mocked(redis.set).mock.calls[0][1] as string);
     expect(stored.teachers[0].name).toBe("tara@test.com");
     expect(stored.teachers[0].availability).toEqual([
-      { start_date: "2026-06-16", end_date: "2026-06-20" },
+      { start_date: "2026-06-16", end_date: "2026-06-20", start_time: null, end_time: null },
     ]);
   });
 });
