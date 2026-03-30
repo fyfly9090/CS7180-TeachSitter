@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import type { TeacherWithAvailability } from "@/types";
 
-type TeacherResult = TeacherWithAvailability & { reasoning?: string };
+type TeacherResult = TeacherWithAvailability & { reasoning?: string; rank?: number };
 
 /** Derive a display name from email when full_name is not set. */
 function emailToName(email: string): string {
@@ -243,6 +243,22 @@ function TeacherCard({
             Verified
           </span>
         </div>
+        {teacher.rank != null && (
+          <div className="absolute top-4 right-4">
+            <span
+              data-testid={`rank-badge-${teacher.rank}`}
+              className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"
+            >
+              <span
+                className="material-symbols-outlined text-[14px]"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                auto_awesome
+              </span>
+              #{teacher.rank} Match
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Right content */}
@@ -317,18 +333,103 @@ export default function SearchClient({
   initialDateFrom,
   initialDateTo,
   initialClassroom,
+  parentId = "",
 }: {
   initialTeachers: TeacherResult[];
   initialError: boolean;
   initialDateFrom: string;
   initialDateTo: string;
   initialClassroom: string;
+  parentId?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [dateFrom, setDateFrom] = useState(initialDateFrom);
   const [dateTo, setDateTo] = useState(initialDateTo);
   const [classroom, setClassroom] = useState(initialClassroom);
+  // aiResult holds the ranked list for a specific searchKey.
+  // displayTeachers falls back to initialTeachers when aiResult is for a different search —
+  // no synchronous setState needed inside effects.
+  const [aiResult, setAiResult] = useState<{
+    searchKey: string;
+    teachers: TeacherResult[];
+  } | null>(null);
+  // aiSettledKey records which search has completed (success or failure). Deriving
+  // isAiRanking from this avoids any synchronous setState inside the effect.
+  const [aiSettledKey, setAiSettledKey] = useState<string | null>(null);
+
+  // searchKey changes when the server sends new search params (new page render).
+  const searchKey = `${initialDateFrom}|${initialDateTo}|${initialClassroom}`;
+
+  // Derived state — no extra setState calls needed:
+  const wouldRank = Boolean(
+    parentId && initialDateFrom && initialDateTo && initialTeachers.length > 0
+  );
+  const displayTeachers = aiResult?.searchKey === searchKey ? aiResult.teachers : initialTeachers;
+  const isAiRanking = wouldRank && aiSettledKey !== searchKey;
+
+  useEffect(() => {
+    // Skip AI ranking when unauthenticated, dates missing, or no teachers.
+    if (!parentId || !initialDateFrom || !initialDateTo || initialTeachers.length === 0) return;
+
+    const controller = new AbortController();
+
+    // Snapshot values needed for the async call so they can't change mid-flight.
+    const capturedKey = searchKey;
+    const teachers = initialTeachers;
+    const body = JSON.stringify({
+      parent_id: parentId,
+      child_classroom: initialClassroom,
+      start_date: initialDateFrom,
+      end_date: initialDateTo,
+      teachers: teachers.map((t) => ({
+        id: t.id,
+        name: t.full_name ?? t.name,
+        classroom: t.classroom,
+        bio: (t.bio ?? "").slice(0, 2000),
+      })),
+    });
+
+    fetch("/api/match", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (!res.ok) return; // graceful degradation — keep unranked list
+        return res.json();
+      })
+      .then((data) => {
+        if (!data) return;
+        const ranked: { id: string; rank: number; reasoning: string }[] = data.ranked_teachers;
+        const rankMap = new Map(ranked.map((r) => [r.id, r]));
+        setAiResult({
+          searchKey: capturedKey,
+          teachers: [...teachers]
+            .sort((a, b) => {
+              const ra = rankMap.get(a.id)?.rank ?? Infinity;
+              const rb = rankMap.get(b.id)?.rank ?? Infinity;
+              return ra - rb;
+            })
+            .map((t) => {
+              const r = rankMap.get(t.id);
+              return r ? { ...t, rank: r.rank, reasoning: r.reasoning } : t;
+            }),
+        });
+      })
+      .catch(() => {
+        /* graceful degradation — initialTeachers already shown */
+      })
+      .finally(() => {
+        // Mark search as settled (success or failure) so isAiRanking → false.
+        if (!controller.signal.aborted) setAiSettledKey(capturedKey);
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [searchKey]);
 
   const handleUpdateResults = () => {
     const params = new URLSearchParams();
@@ -439,13 +540,34 @@ export default function SearchClient({
         {/* Results */}
         {isPending && <LoadingSkeleton />}
         {!isPending && initialError && <ErrorState />}
-        {!isPending && !initialError && initialTeachers.length === 0 && <EmptyState />}
-        {!isPending && !initialError && initialTeachers.length > 0 && (
-          <div className="space-y-12">
-            {initialTeachers.map((teacher) => (
-              <TeacherCard key={teacher.id} teacher={teacher} dateFrom={dateFrom} dateTo={dateTo} />
-            ))}
-          </div>
+        {!isPending && !initialError && displayTeachers.length === 0 && <EmptyState />}
+        {!isPending && !initialError && displayTeachers.length > 0 && (
+          <>
+            {isAiRanking && (
+              <div
+                data-testid="ai-ranking-loading"
+                className="flex items-center gap-2 mb-6 px-4 py-3 bg-surface-container rounded-xl text-sm text-on-surface-variant"
+              >
+                <span
+                  className="material-symbols-outlined text-secondary-container text-xl animate-spin"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  auto_awesome
+                </span>
+                <span>AI is ranking your matches…</span>
+              </div>
+            )}
+            <div className="space-y-12">
+              {displayTeachers.map((teacher) => (
+                <TeacherCard
+                  key={teacher.id}
+                  teacher={teacher}
+                  dateFrom={dateFrom}
+                  dateTo={dateTo}
+                />
+              ))}
+            </div>
+          </>
         )}
       </main>
       <MobileBottomNav />
