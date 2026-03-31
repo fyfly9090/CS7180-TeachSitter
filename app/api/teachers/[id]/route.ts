@@ -60,6 +60,8 @@ export const PATCH = withApiHandler(async (req: Request, ctx: unknown) => {
           teacher_id: id,
           start_date: block.start_date,
           end_date: block.end_date,
+          start_time: null,
+          end_time: null,
           is_booked: false,
         }))
       );
