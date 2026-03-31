@@ -70,5 +70,5 @@ export const PATCH = withApiHandler(async (req: Request, ctx: unknown) => {
     }
   }
 
-  return NextResponse.json({ teacher: updated as Teacher });
+  return NextResponse.json({ teacher: updated as unknown as Teacher });
 });
