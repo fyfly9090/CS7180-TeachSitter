@@ -35,7 +35,7 @@ export const PATCH = withApiHandler(async (req: Request, ctx: unknown) => {
     .from("teachers")
     .update({
       classroom: input.classroom,
-      bio: input.bio ?? null,
+      bio: input.bio,
       expertise: input.expertise ?? [],
     })
     .eq("id", id)
