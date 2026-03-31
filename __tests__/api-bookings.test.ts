@@ -1,5 +1,5 @@
 // @vitest-environment node
-// TDD RED → GREEN: POST /api/bookings + PATCH /api/bookings/[id]
+// TDD RED → GREEN: POST /api/bookings + PATCH /api/bookings/[id] + GET /api/bookings
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
@@ -18,7 +18,7 @@ vi.mock("../lib/supabase/server", () => ({
 // ---------------------------------------------------------------------------
 
 import { createServerClient } from "../lib/supabase/server";
-import { POST } from "../app/api/bookings/route";
+import { GET, POST } from "../app/api/bookings/route";
 import { PATCH } from "../app/api/bookings/[id]/route";
 
 // ---------------------------------------------------------------------------
@@ -72,6 +72,7 @@ type MockChain = {
   insert: ReturnType<typeof vi.fn>;
   update: ReturnType<typeof vi.fn>;
   maybeSingle: ReturnType<typeof vi.fn>;
+  order: ReturnType<typeof vi.fn>;
 };
 
 /** Build a fluent Supabase chain mock.
@@ -88,6 +89,7 @@ function makeChain(finalResult: { data: unknown; error: unknown }): MockChain {
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue(finalResult),
+    order: vi.fn().mockReturnThis(),
   };
   // Make the chain itself awaitable (for queries that don't call .single())
   (chain as unknown as PromiseLike<unknown>).then = (
@@ -369,5 +371,82 @@ describe("PATCH /api/bookings/[id] — business logic", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.booking.status).toBe("declined");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/bookings
+// ---------------------------------------------------------------------------
+
+const BOOKING_WITH_TEACHER = {
+  id: BOOKING_ID,
+  parent_id: PARENT_UID,
+  teacher_id: TEACHER_ID,
+  start_date: "2026-06-16",
+  end_date: "2026-06-20",
+  status: "confirmed",
+  message: "Hi!",
+  created_at: "2026-03-26T00:00:00Z",
+  teachers: { full_name: "Ms. Tara Smith", classroom: "Sunflower" },
+};
+
+function makeGetRequest(): Request {
+  return new Request("http://localhost/api/bookings", { method: "GET" });
+}
+
+describe("GET /api/bookings — auth", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  test("returns 401 when unauthenticated", async () => {
+    mockSupabase(null, []);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(401);
+  });
+
+  test("returns 403 when user is a teacher", async () => {
+    mockSupabase(TEACHER_USER, []);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("GET /api/bookings — data", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  test("returns 200 with bookings array for authenticated parent", async () => {
+    mockSupabase(PARENT_USER, [{ data: [BOOKING_WITH_TEACHER], error: null }]);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.bookings)).toBe(true);
+    expect(body.bookings).toHaveLength(1);
+  });
+
+  test("flattens teacher_name from nested teachers join", async () => {
+    mockSupabase(PARENT_USER, [{ data: [BOOKING_WITH_TEACHER], error: null }]);
+    const res = await GET(makeGetRequest());
+    const body = await res.json();
+    expect(body.bookings[0].teacher_name).toBe("Ms. Tara Smith");
+  });
+
+  test("flattens teacher_classroom from nested teachers join", async () => {
+    mockSupabase(PARENT_USER, [{ data: [BOOKING_WITH_TEACHER], error: null }]);
+    const res = await GET(makeGetRequest());
+    const body = await res.json();
+    expect(body.bookings[0].teacher_classroom).toBe("Sunflower");
+  });
+
+  test("returns empty array when parent has no bookings", async () => {
+    mockSupabase(PARENT_USER, [{ data: [], error: null }]);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.bookings).toHaveLength(0);
+  });
+
+  test("returns 500 on database error", async () => {
+    mockSupabase(PARENT_USER, [{ data: null, error: { code: "PGRST000", message: "DB error" } }]);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(500);
   });
 });
