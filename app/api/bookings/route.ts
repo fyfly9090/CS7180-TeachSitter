@@ -27,8 +27,26 @@ export const GET = withApiHandler(async () => {
 
   if (error) throw errors.internal();
 
-  const bookings = (data ?? []).map((row) => {
+  const rows = data ?? [];
+
+  // Batch-fetch availability times for all relevant teachers
+  const teacherIds = [...new Set(rows.map((r) => r.teacher_id))];
+  const { data: availRows } = teacherIds.length
+    ? await supabase
+        .from("availability")
+        .select("teacher_id, start_date, end_date, start_time, end_time")
+        .in("teacher_id", teacherIds)
+    : { data: [] };
+
+  const bookings = rows.map((row) => {
     const teacher = row.teachers as { full_name: string | null; classroom: string } | null;
+    // Find availability slot that fully covers the booking date range
+    const avail = (availRows ?? []).find(
+      (a) =>
+        a.teacher_id === row.teacher_id &&
+        a.start_date <= row.start_date &&
+        a.end_date >= row.end_date
+    ) as { start_time: string | null; end_time: string | null } | undefined;
     return {
       id: row.id,
       teacher_id: row.teacher_id,
@@ -36,6 +54,8 @@ export const GET = withApiHandler(async () => {
       teacher_classroom: teacher?.classroom ?? null,
       start_date: row.start_date,
       end_date: row.end_date,
+      start_time: avail?.start_time ?? null,
+      end_time: avail?.end_time ?? null,
       status: row.status,
       message: row.message,
       created_at: row.created_at,

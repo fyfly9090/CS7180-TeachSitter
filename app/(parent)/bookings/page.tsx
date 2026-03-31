@@ -13,6 +13,8 @@ interface BookingItem {
   teacher_classroom: string | null;
   start_date: string;
   end_date: string;
+  start_time: string | null;
+  end_time: string | null;
   status: "pending" | "confirmed" | "declined";
   message: string | null;
   created_at: string;
@@ -20,20 +22,54 @@ interface BookingItem {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function formatDateRange(start: string, end: string): string {
-  const fmt = (d: string) =>
-    new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  return `${fmt(start)}–${fmt(end)}`;
+/** Deterministic photo index from teacher UUID (1–3). */
+function teacherPhotoSrc(teacherId: string): string {
+  const hex = teacherId.replace(/-/g, "").slice(0, 8);
+  const num = parseInt(hex, 16);
+  return `/teachers/teacher-${(num % 3) + 1}.png`;
 }
 
-function initials(name: string | null): string {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .filter((w) => /^[A-Za-z]/.test(w))
-    .slice(-2)
-    .map((w) => w[0].toUpperCase())
-    .join("");
+/** "2026-06-16" → "Jun 16" */
+function fmtDate(d: string): string {
+  return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/** "2026-06-16" → "JUNE 16" */
+function fmtDateHeader(d: string): string {
+  return new Date(d + "T00:00:00")
+    .toLocaleDateString("en-US", { month: "long", day: "numeric" })
+    .toUpperCase();
+}
+
+/** "08:00:00" → "08:00 AM" */
+function fmtTime(t: string | null): string | null {
+  if (!t) return null;
+  const [h, m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+/** Returns "45 hours" or "5 days" depending on whether times are present. */
+function fmtDuration(
+  startDate: string,
+  endDate: string,
+  startTime: string | null,
+  endTime: string | null
+): string {
+  const days =
+    Math.round(
+      (new Date(endDate + "T00:00:00").getTime() - new Date(startDate + "T00:00:00").getTime()) /
+        86400000
+    ) + 1;
+  if (!startTime || !endTime) return `${days} day${days !== 1 ? "s" : ""}`;
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  const totalHours = Math.round(days * ((eh * 60 + em - sh * 60 - sm) / 60) * 10) / 10;
+  return `${totalHours} hour${totalHours !== 1 ? "s" : ""}`;
 }
 
 function isInPast(endDate: string): boolean {
@@ -44,13 +80,11 @@ function isInPast(endDate: string): boolean {
 
 function Navbar() {
   const pathname = usePathname();
-
   const navLinks = [
     { label: "Find Teachers", href: "/search" },
     { label: "My Bookings", href: "/bookings" },
     { label: "Profile", href: "/profile" },
   ];
-
   return (
     <header className="fixed top-0 inset-x-0 h-16 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/20 z-50">
       <div className="max-w-5xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
@@ -92,13 +126,11 @@ function Navbar() {
 
 function MobileBottomNav() {
   const pathname = usePathname();
-
   const items = [
     { label: "Search", icon: "search", href: "/search" },
     { label: "Bookings", icon: "bookmark_added", href: "/bookings" },
     { label: "Profile", icon: "person", href: "/profile" },
   ];
-
   return (
     <nav className="fixed bottom-0 inset-x-0 md:hidden bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/20 z-50">
       <div className="flex justify-around">
@@ -124,63 +156,112 @@ function MobileBottomNav() {
   );
 }
 
-// ── Booking Card (Confirmed / Pending) ─────────────────────────────────────────
+// ── BookingCard ────────────────────────────────────────────────────────────────
 
 function BookingCard({ booking }: { booking: BookingItem }) {
   const isConfirmed = booking.status === "confirmed";
+  const startFmt = fmtTime(booking.start_time);
+  const endFmt = fmtTime(booking.end_time);
+
   return (
     <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm">
-      <div className="flex gap-4">
-        <div className="w-14 h-14 rounded-xl bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
-          {initials(booking.teacher_name)}
-        </div>
-        <div className="flex-1">
+      <div className="flex gap-4 items-start">
+        {/* Teacher photo */}
+        <img
+          src={teacherPhotoSrc(booking.teacher_id)}
+          alt={booking.teacher_name ?? "Teacher"}
+          className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+        />
+
+        {/* Center: name + status badge + buttons */}
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-base font-bold text-on-surface">
+            <p className="text-base font-bold text-primary">
               {booking.teacher_name ?? "Unknown teacher"}
             </p>
             {isConfirmed ? (
-              <span className="bg-tertiary-fixed text-on-tertiary-container text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+              <span className="bg-tertiary-fixed text-on-tertiary-container text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-widest">
                 Confirmed
               </span>
             ) : (
-              <span className="bg-secondary-fixed text-secondary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+              <span className="bg-secondary-fixed text-secondary text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-widest">
                 Pending
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1 mt-1.5">
-            <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-              calendar_today
-            </span>
-            <span className="text-sm text-on-surface-variant">
-              {formatDateRange(booking.start_date, booking.end_date)}
-            </span>
-          </div>
           {booking.teacher_classroom && (
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-                school
-              </span>
-              <span className="text-sm text-on-surface-variant">{booking.teacher_classroom}</span>
-            </div>
+            <p className="text-xs text-on-surface-variant mt-0.5 uppercase tracking-widest">
+              {booking.teacher_classroom} Class
+            </p>
           )}
           <div className="flex gap-2 mt-3 flex-wrap">
-            <button className="border border-outline-variant/30 text-primary rounded-xl px-4 py-2 text-xs font-bold hover:bg-primary-fixed/20 transition-all">
+            <button className="bg-primary text-on-primary rounded-full px-5 py-1.5 text-xs font-bold hover:bg-primary/90 transition-all">
               Message
             </button>
-            {isConfirmed ? (
-              <button className="border border-outline-variant/30 text-primary rounded-xl px-4 py-2 text-xs font-bold hover:bg-primary-fixed/20 transition-all">
-                Modify
-              </button>
-            ) : (
-              <button className="border border-outline-variant/30 text-on-surface-variant rounded-xl px-4 py-2 text-xs font-bold hover:bg-surface-container transition-all">
-                Cancel
-              </button>
-            )}
+            <button className="border border-outline-variant/40 text-on-surface rounded-full px-5 py-1.5 text-xs font-semibold hover:bg-surface-container transition-all">
+              {isConfirmed ? "Modify Booking" : "Cancel"}
+            </button>
           </div>
         </div>
+
+        {/* Right: date + time */}
+        <div className="text-right flex-shrink-0">
+          <p className="text-sm font-bold text-on-surface">
+            {fmtDate(booking.start_date)} - {fmtDate(booking.end_date)}
+          </p>
+          {startFmt && endFmt && (
+            <p className="text-xs text-on-surface-variant mt-1">
+              {startFmt} - {endFmt}
+            </p>
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+// ── PastHistorySidebar ─────────────────────────────────────────────────────────
+
+function PastHistorySidebar({ past }: { past: BookingItem[] }) {
+  return (
+    <div className="sticky top-24 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-base font-bold text-on-surface">Past History</h2>
+        <button className="text-primary text-xs font-medium hover:underline">
+          download Report
+        </button>
+      </div>
+
+      {past.length === 0 ? (
+        <p className="text-sm text-on-surface-variant py-2">No past sessions yet.</p>
+      ) : (
+        <div className="flex flex-col divide-y divide-outline-variant/20">
+          {past.map((session) => (
+            <div key={session.id} className="py-3 first:pt-0 last:pb-0">
+              <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-0.5">
+                {fmtDateHeader(session.start_date)}
+              </p>
+              <p className="text-sm font-bold text-on-surface">
+                {session.teacher_name ?? "Unknown teacher"}
+              </p>
+              <p className="text-xs text-on-surface-variant mt-0.5">
+                Completed •{" "}
+                {fmtDuration(
+                  session.start_date,
+                  session.end_date,
+                  session.start_time,
+                  session.end_time
+                )}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button className="w-full mt-5 border border-outline-variant/30 text-on-surface-variant rounded-2xl py-2.5 text-sm font-semibold hover:bg-surface-container transition-all flex items-center justify-center gap-2">
+        <span className="material-symbols-outlined text-[16px]">history</span>
+        Download History Report
+      </button>
     </div>
   );
 }
@@ -212,7 +293,6 @@ export default function BookingsPage() {
       <Navbar />
       <div className="pt-16 pb-24 md:pb-8 bg-background min-h-screen">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
-          {/* Page header */}
           <h1 className="text-3xl font-bold text-on-surface">My Bookings</h1>
           <p className="text-on-surface-variant mt-1">
             Track your childcare requests and confirmed sessions.
@@ -231,11 +311,10 @@ export default function BookingsPage() {
           )}
 
           {!loading && !error && (
-            /* Main grid */
             <div className="lg:grid lg:grid-cols-3 lg:gap-8 mt-8">
-              {/* Main column */}
+              {/* Left: Confirmed + Pending */}
               <div className="lg:col-span-2 flex flex-col gap-6">
-                {/* Confirmed section */}
+                {/* Confirmed */}
                 <div>
                   <h2 className="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
                     <span
@@ -259,7 +338,7 @@ export default function BookingsPage() {
                   )}
                 </div>
 
-                {/* Pending Requests section */}
+                {/* Pending Requests */}
                 <div>
                   <h2 className="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
                     <span className="material-symbols-outlined text-secondary text-[20px]">
@@ -277,76 +356,11 @@ export default function BookingsPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Past Sessions section */}
-                <div>
-                  <h2 className="text-base font-bold text-on-surface-variant mb-1 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[20px]">history</span>
-                    Past Sessions
-                  </h2>
-                  {past.length === 0 ? (
-                    <p className="text-sm text-on-surface-variant py-3">No past sessions.</p>
-                  ) : (
-                    <div className="flex flex-col">
-                      {past.map((session) => (
-                        <div
-                          key={session.id}
-                          className="flex items-center justify-between border-b border-outline-variant/20 py-3 gap-2 flex-wrap"
-                        >
-                          <div className="flex items-center gap-2 flex-wrap text-sm text-on-surface-variant">
-                            <span>{formatDateRange(session.start_date, session.end_date)}</span>
-                            <span className="text-outline">·</span>
-                            <span className="font-medium text-on-surface">
-                              {session.teacher_name ?? "Unknown teacher"}
-                            </span>
-                          </div>
-                          <span className="bg-tertiary-fixed text-on-tertiary-container text-xs px-2 py-0.5 rounded-full font-medium">
-                            Completed
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
 
-              {/* Sidebar: Summary */}
+              {/* Right: Past History */}
               <div className="lg:col-span-1 mt-8 lg:mt-0">
-                <div className="sticky top-24 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm">
-                  <h2 className="text-base font-bold text-on-surface mb-4">Summary</h2>
-                  <div className="flex flex-col gap-3">
-                    <div className="bg-surface-container-low rounded-xl p-3 text-center">
-                      <p
-                        className="text-2xl font-bold text-primary"
-                        data-testid="sidebar-upcoming-count"
-                      >
-                        {confirmed.length}
-                      </p>
-                      <p className="text-xs text-on-surface-variant mt-0.5">Upcoming</p>
-                    </div>
-                    <div className="bg-surface-container-low rounded-xl p-3 text-center">
-                      <p
-                        className="text-2xl font-bold text-secondary"
-                        data-testid="sidebar-pending-count"
-                      >
-                        {pending.length}
-                      </p>
-                      <p className="text-xs text-on-surface-variant mt-0.5">Pending</p>
-                    </div>
-                    <div className="bg-surface-container-low rounded-xl p-3 text-center">
-                      <p
-                        className="text-2xl font-bold text-on-surface-variant"
-                        data-testid="sidebar-completed-count"
-                      >
-                        {past.length}
-                      </p>
-                      <p className="text-xs text-on-surface-variant mt-0.5">Completed</p>
-                    </div>
-                  </div>
-                  <button className="w-full mt-4 border border-outline-variant/30 text-on-surface-variant rounded-xl py-2.5 text-sm font-semibold hover:bg-surface-container transition-all">
-                    Download Report
-                  </button>
-                </div>
+                <PastHistorySidebar past={past} />
               </div>
             </div>
           )}

@@ -30,11 +30,13 @@ vi.mock("next/link", () => ({
 
 const CONFIRMED_FUTURE = {
   id: "b1",
-  teacher_id: "t1",
+  teacher_id: "550e8400-e29b-41d4-a716-446655440010",
   teacher_name: "Ms. Tara Smith",
   teacher_classroom: "Sunflower",
   start_date: "2026-06-16",
   end_date: "2026-06-20",
+  start_time: "08:00:00",
+  end_time: "17:00:00",
   status: "confirmed",
   message: null,
   created_at: "2026-03-01T00:00:00Z",
@@ -42,11 +44,13 @@ const CONFIRMED_FUTURE = {
 
 const PENDING = {
   id: "b2",
-  teacher_id: "t2",
+  teacher_id: "550e8400-e29b-41d4-a716-446655440011",
   teacher_name: "Ms. Rachel Chen",
   teacher_classroom: "Rainbow",
   start_date: "2026-06-23",
   end_date: "2026-06-27",
+  start_time: null,
+  end_time: null,
   status: "pending",
   message: "Hi Rachel!",
   created_at: "2026-03-02T00:00:00Z",
@@ -54,11 +58,13 @@ const PENDING = {
 
 const CONFIRMED_PAST = {
   id: "b3",
-  teacher_id: "t1",
+  teacher_id: "550e8400-e29b-41d4-a716-446655440010",
   teacher_name: "Ms. Tara Smith",
   teacher_classroom: "Sunflower",
   start_date: "2024-01-06",
   end_date: "2024-01-10",
+  start_time: null,
+  end_time: null,
   status: "confirmed",
   message: null,
   created_at: "2024-01-01T00:00:00Z",
@@ -89,36 +95,29 @@ describe("BookingsPage — structure", () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it("renders page heading", async () => {
+  it("renders page heading", () => {
     render(<BookingsPage />);
     expect(screen.getByRole("heading", { name: /my bookings/i })).toBeInTheDocument();
   });
 
-  it("renders Confirmed section heading", async () => {
+  it("renders Confirmed section heading after load", async () => {
     render(<BookingsPage />);
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /confirmed/i })).toBeInTheDocument();
     });
   });
 
-  it("renders Pending Requests section heading", async () => {
+  it("renders Pending Requests section heading after load", async () => {
     render(<BookingsPage />);
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /pending requests/i })).toBeInTheDocument();
     });
   });
 
-  it("renders Past Sessions section heading", async () => {
+  it("renders Past History sidebar heading after load", async () => {
     render(<BookingsPage />);
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /past sessions/i })).toBeInTheDocument();
-    });
-  });
-
-  it("renders Summary sidebar", async () => {
-    render(<BookingsPage />);
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /summary/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /past history/i })).toBeInTheDocument();
     });
   });
 });
@@ -153,7 +152,7 @@ describe("BookingsPage — data loading", () => {
     });
   });
 
-  it("shows past session teacher name after loading", async () => {
+  it("shows past session teacher name in Past History sidebar", async () => {
     mockFetchBookings([CONFIRMED_PAST]);
     render(<BookingsPage />);
     await waitFor(() => {
@@ -162,35 +161,109 @@ describe("BookingsPage — data loading", () => {
   });
 });
 
-describe("BookingsPage — grouping by status", () => {
+describe("BookingsPage — booking card UI", () => {
   beforeEach(() => {
     global.fetch = vi.fn();
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it("places confirmed future booking in Confirmed section (CONFIRMED badge)", async () => {
+  it("shows teacher photo img element in booking card", async () => {
     mockFetchBookings([CONFIRMED_FUTURE]);
     render(<BookingsPage />);
     await waitFor(() => {
-      const badges = screen.getAllByText(/confirmed/i);
-      // At least one badge should be visible (the status badge, not just the heading)
-      expect(badges.length).toBeGreaterThan(0);
+      const img = screen.getByRole("img", { name: /ms\. tara smith/i });
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute("src", expect.stringContaining("/teachers/teacher-"));
     });
   });
 
-  it("places pending booking in Pending Requests section (PENDING badge)", async () => {
+  it("shows formatted date range in booking card", async () => {
+    mockFetchBookings([CONFIRMED_FUTURE]);
+    render(<BookingsPage />);
+    await waitFor(() => {
+      // Expect something like "Jun 16 - Jun 20"
+      expect(screen.getByText(/jun 16/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows formatted time range when start_time and end_time are present", async () => {
+    mockFetchBookings([CONFIRMED_FUTURE]);
+    render(<BookingsPage />);
+    await waitFor(() => {
+      // "08:00:00" → "08:00 AM", "17:00:00" → "05:00 PM"
+      expect(screen.getByText(/08:00 AM/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows CONFIRMED badge for confirmed future booking", async () => {
+    mockFetchBookings([CONFIRMED_FUTURE]);
+    render(<BookingsPage />);
+    await waitFor(() => {
+      expect(screen.getAllByText(/confirmed/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  it("shows PENDING badge for pending booking", async () => {
     mockFetchBookings([PENDING]);
     render(<BookingsPage />);
     await waitFor(() => {
-      expect(screen.getByText(/pending/i, { selector: "span" })).toBeInTheDocument();
+      expect(screen.getAllByText(/pending/i).length).toBeGreaterThan(0);
     });
   });
 
-  it("places confirmed past booking in Past Sessions with Completed badge", async () => {
+  it("shows Message button", async () => {
+    mockFetchBookings([CONFIRMED_FUTURE]);
+    render(<BookingsPage />);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /message/i })).toBeInTheDocument();
+    });
+  });
+
+  it("shows Modify Booking button for confirmed booking", async () => {
+    mockFetchBookings([CONFIRMED_FUTURE]);
+    render(<BookingsPage />);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /modify booking/i })).toBeInTheDocument();
+    });
+  });
+});
+
+describe("BookingsPage — Past History sidebar", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("shows Completed text in Past History sidebar for past booking", async () => {
     mockFetchBookings([CONFIRMED_PAST]);
     render(<BookingsPage />);
     await waitFor(() => {
-      expect(screen.getAllByText(/completed/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/completed/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows duration in Past History sidebar", async () => {
+    mockFetchBookings([CONFIRMED_PAST]);
+    render(<BookingsPage />);
+    await waitFor(() => {
+      // 2024-01-06 to 2024-01-10 = 5 days, no times → "5 days"
+      expect(screen.getByText(/5 days/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows empty state in Past History when no past bookings", async () => {
+    mockFetchBookings([]);
+    render(<BookingsPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/no past sessions yet/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows download History Report button", async () => {
+    mockFetchBookings([]);
+    render(<BookingsPage />);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /download history report/i })).toBeInTheDocument();
     });
   });
 });
@@ -213,44 +286,6 @@ describe("BookingsPage — empty states", () => {
     render(<BookingsPage />);
     await waitFor(() => {
       expect(screen.getByText(/no pending requests/i)).toBeInTheDocument();
-    });
-  });
-
-  it("shows empty state in Past Sessions when no past bookings", async () => {
-    render(<BookingsPage />);
-    await waitFor(() => {
-      expect(screen.getByText(/no past sessions/i)).toBeInTheDocument();
-    });
-  });
-});
-
-describe("BookingsPage — sidebar counts", () => {
-  beforeEach(() => {
-    global.fetch = vi.fn();
-  });
-  afterEach(() => vi.restoreAllMocks());
-
-  it("shows correct Upcoming count from confirmed future bookings", async () => {
-    mockFetchBookings([CONFIRMED_FUTURE, CONFIRMED_PAST, PENDING]);
-    render(<BookingsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId("sidebar-upcoming-count")).toHaveTextContent("1");
-    });
-  });
-
-  it("shows correct Pending count", async () => {
-    mockFetchBookings([CONFIRMED_FUTURE, PENDING]);
-    render(<BookingsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId("sidebar-pending-count")).toHaveTextContent("1");
-    });
-  });
-
-  it("shows correct Completed count from past confirmed bookings", async () => {
-    mockFetchBookings([CONFIRMED_PAST]);
-    render(<BookingsPage />);
-    await waitFor(() => {
-      expect(screen.getByTestId("sidebar-completed-count")).toHaveTextContent("1");
     });
   });
 });

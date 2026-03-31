@@ -73,6 +73,7 @@ type MockChain = {
   update: ReturnType<typeof vi.fn>;
   maybeSingle: ReturnType<typeof vi.fn>;
   order: ReturnType<typeof vi.fn>;
+  in: ReturnType<typeof vi.fn>;
 };
 
 /** Build a fluent Supabase chain mock.
@@ -90,6 +91,7 @@ function makeChain(finalResult: { data: unknown; error: unknown }): MockChain {
     update: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue(finalResult),
     order: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
   };
   // Make the chain itself awaitable (for queries that don't call .single())
   (chain as unknown as PromiseLike<unknown>).then = (
@@ -448,5 +450,35 @@ describe("GET /api/bookings — data", () => {
     mockSupabase(PARENT_USER, [{ data: null, error: { code: "PGRST000", message: "DB error" } }]);
     const res = await GET(makeGetRequest());
     expect(res.status).toBe(500);
+  });
+
+  test("includes start_time and end_time from availability when slot covers booking dates", async () => {
+    const availSlot = {
+      teacher_id: TEACHER_ID,
+      start_date: "2026-06-15",
+      end_date: "2026-06-30",
+      start_time: "08:00:00",
+      end_time: "17:00:00",
+    };
+    mockSupabase(PARENT_USER, [
+      { data: [BOOKING_WITH_TEACHER], error: null }, // bookings query
+      { data: [availSlot], error: null }, // availability batch query
+    ]);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.bookings[0].start_time).toBe("08:00:00");
+    expect(body.bookings[0].end_time).toBe("17:00:00");
+  });
+
+  test("sets start_time and end_time to null when no availability slot matches", async () => {
+    mockSupabase(PARENT_USER, [
+      { data: [BOOKING_WITH_TEACHER], error: null },
+      { data: [], error: null },
+    ]);
+    const res = await GET(makeGetRequest());
+    const body = await res.json();
+    expect(body.bookings[0].start_time).toBeNull();
+    expect(body.bookings[0].end_time).toBeNull();
   });
 });
