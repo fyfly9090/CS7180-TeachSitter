@@ -11,7 +11,12 @@ const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useSearchParams: () =>
     new URLSearchParams(
-      "teacher_id=teacher-1&teacher_name=tara.smith%40school.com&classroom=Sunflower&start_date=2026-06-16&end_date=2026-06-20"
+      "teacher_id=teacher-1&teacher_name=tara.smith%40school.com&classroom=Sunflower" +
+        "&start_date=2026-06-16&end_date=2026-06-20&availability=" +
+        encodeURIComponent(
+          '[{"start_date":"2026-06-15","end_date":"2026-06-30","start_time":"09:00","end_time":"17:00"},' +
+            '{"start_date":"2026-07-10","end_date":"2026-07-20","start_time":null,"end_time":null}]'
+        )
     ),
   useRouter: () => ({ push: mockPush }),
   usePathname: () => "/bookings/new",
@@ -94,6 +99,34 @@ describe("NewBookingPage — page display", () => {
   it("renders the submit button", () => {
     render(<NewBookingPage />);
     expect(screen.getByRole("button", { name: /confirm booking/i })).toBeInTheDocument();
+  });
+});
+
+describe("NewBookingPage — availability display", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("shows 'Available' label when availability slots are present", () => {
+    render(<NewBookingPage />);
+    expect(screen.getByText("Available")).toBeInTheDocument();
+  });
+
+  it("renders each availability date range", () => {
+    render(<NewBookingPage />);
+    expect(screen.getByText(/Jun 15/i)).toBeInTheDocument();
+    expect(screen.getByText(/Jun 30/i)).toBeInTheDocument();
+    expect(screen.getByText(/Jul 10/i)).toBeInTheDocument();
+    expect(screen.getByText(/Jul 20/i)).toBeInTheDocument();
+  });
+
+  it("shows time range for slots that have start_time and end_time", () => {
+    render(<NewBookingPage />);
+    expect(screen.getByText(/9:00 AM/i)).toBeInTheDocument();
+    expect(screen.getByText(/5:00 PM/i)).toBeInTheDocument();
   });
 });
 

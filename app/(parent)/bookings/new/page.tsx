@@ -10,6 +10,27 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatDate(d: string): string {
+  const [, m, day] = d.split("-").map(Number);
+  return `${MONTHS[m - 1]} ${day}`;
+}
+
+function formatTime(t: string): string {
+  const [h, min] = t.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(min).padStart(2, "0")} ${period}`;
+}
+
+interface AvailabilitySlot {
+  start_date: string;
+  end_date: string;
+  start_time: string | null;
+  end_time: string | null;
+}
+
 function Navbar() {
   const pathname = usePathname();
 
@@ -118,6 +139,16 @@ function NewBookingContent() {
   const initialStartDate = searchParams.get("start_date") ?? "";
   const initialEndDate = searchParams.get("end_date") ?? "";
 
+  const availabilityParam = searchParams.get("availability");
+  let availability: AvailabilitySlot[] = [];
+  if (availabilityParam) {
+    try {
+      availability = JSON.parse(availabilityParam) as AvailabilitySlot[];
+    } catch {
+      // ignore malformed param
+    }
+  }
+
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
   const [message, setMessage] = useState("");
@@ -210,6 +241,38 @@ function NewBookingContent() {
                 )}
               </div>
             </div>
+            {availability.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-outline-variant/15">
+                <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
+                  Available
+                </p>
+                <div className="flex flex-col gap-1">
+                  {availability.map((slot, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 text-sm text-on-surface-variant"
+                    >
+                      <span className="material-symbols-outlined text-[14px] text-primary">
+                        event_available
+                      </span>
+                      <span>
+                        {formatDate(slot.start_date)}
+                        {" – "}
+                        {formatDate(slot.end_date)}
+                        {slot.start_time && slot.end_time && (
+                          <span className="text-on-surface-variant/70">
+                            {" · "}
+                            {formatTime(slot.start_time)}
+                            {" – "}
+                            {formatTime(slot.end_time)}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Booking form */}
