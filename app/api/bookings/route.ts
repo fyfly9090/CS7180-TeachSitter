@@ -1,3 +1,4 @@
+// GET /api/bookings — Parent fetches their booking history with teacher info.
 // POST /api/bookings — Parent creates a booking request for a teacher.
 // Checks teacher availability for the requested dates before inserting.
 
@@ -6,6 +7,43 @@ import { withApiHandler, errors } from "@/lib/errors";
 import { createBookingSchema } from "@/lib/validations";
 import { createServerClient } from "@/lib/supabase/server";
 import type { BookingResponse } from "@/types";
+
+export const GET = withApiHandler(async () => {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw errors.unauthorized();
+  if (user.user_metadata.role !== "parent") throw errors.forbidden();
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(
+      "id, teacher_id, start_date, end_date, status, message, created_at, teachers(full_name, classroom)"
+    )
+    .eq("parent_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) throw errors.internal();
+
+  const bookings = (data ?? []).map((row) => {
+    const teacher = row.teachers as { full_name: string | null; classroom: string } | null;
+    return {
+      id: row.id,
+      teacher_id: row.teacher_id,
+      teacher_name: teacher?.full_name ?? null,
+      teacher_classroom: teacher?.classroom ?? null,
+      start_date: row.start_date,
+      end_date: row.end_date,
+      status: row.status,
+      message: row.message,
+      created_at: row.created_at,
+    };
+  });
+
+  return NextResponse.json({ bookings });
+});
 
 export const POST = withApiHandler(async (req: Request) => {
   const supabase = await createServerClient();

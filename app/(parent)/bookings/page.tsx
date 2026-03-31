@@ -1,7 +1,46 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+interface BookingItem {
+  id: string;
+  teacher_id: string;
+  teacher_name: string | null;
+  teacher_classroom: string | null;
+  start_date: string;
+  end_date: string;
+  status: "pending" | "confirmed" | "declined";
+  message: string | null;
+  created_at: string;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function formatDateRange(start: string, end: string): string {
+  const fmt = (d: string) =>
+    new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `${fmt(start)}–${fmt(end)}`;
+}
+
+function initials(name: string | null): string {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .filter((w) => /^[A-Za-z]/.test(w))
+    .slice(-2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
+
+function isInPast(endDate: string): boolean {
+  return endDate < new Date().toISOString().slice(0, 10);
+}
+
+// ── Navbar ─────────────────────────────────────────────────────────────────────
 
 function Navbar() {
   const pathname = usePathname();
@@ -49,6 +88,8 @@ function Navbar() {
   );
 }
 
+// ── MobileBottomNav ────────────────────────────────────────────────────────────
+
 function MobileBottomNav() {
   const pathname = usePathname();
 
@@ -83,12 +124,89 @@ function MobileBottomNav() {
   );
 }
 
-const pastSessions = [
-  { dates: "May 26–30", teacher: "Ms. Tara Smith", child: "Lily" },
-  { dates: "Apr 7–11", teacher: "Ms. Rachel Chen", child: "Oliver" },
-];
+// ── Booking Card (Confirmed / Pending) ─────────────────────────────────────────
+
+function BookingCard({ booking }: { booking: BookingItem }) {
+  const isConfirmed = booking.status === "confirmed";
+  return (
+    <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm">
+      <div className="flex gap-4">
+        <div className="w-14 h-14 rounded-xl bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
+          {initials(booking.teacher_name)}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-base font-bold text-on-surface">
+              {booking.teacher_name ?? "Unknown teacher"}
+            </p>
+            {isConfirmed ? (
+              <span className="bg-tertiary-fixed text-on-tertiary-container text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                Confirmed
+              </span>
+            ) : (
+              <span className="bg-secondary-fixed text-secondary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                Pending
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 mt-1.5">
+            <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+              calendar_today
+            </span>
+            <span className="text-sm text-on-surface-variant">
+              {formatDateRange(booking.start_date, booking.end_date)}
+            </span>
+          </div>
+          {booking.teacher_classroom && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                school
+              </span>
+              <span className="text-sm text-on-surface-variant">{booking.teacher_classroom}</span>
+            </div>
+          )}
+          <div className="flex gap-2 mt-3 flex-wrap">
+            <button className="border border-outline-variant/30 text-primary rounded-xl px-4 py-2 text-xs font-bold hover:bg-primary-fixed/20 transition-all">
+              Message
+            </button>
+            {isConfirmed ? (
+              <button className="border border-outline-variant/30 text-primary rounded-xl px-4 py-2 text-xs font-bold hover:bg-primary-fixed/20 transition-all">
+                Modify
+              </button>
+            ) : (
+              <button className="border border-outline-variant/30 text-on-surface-variant rounded-xl px-4 py-2 text-xs font-bold hover:bg-surface-container transition-all">
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function BookingsPage() {
+  const [bookings, setBookings] = useState<BookingItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/bookings")
+      .then((res) => {
+        if (!res.ok) throw new Error("failed");
+        return res.json();
+      })
+      .then((data: { bookings: BookingItem[] }) => setBookings(data.bookings))
+      .catch(() => setError("Failed to load bookings. Please try again."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const confirmed = bookings.filter((b) => b.status === "confirmed" && !isInPast(b.end_date));
+  const pending = bookings.filter((b) => b.status === "pending");
+  const past = bookings.filter((b) => b.status === "confirmed" && isInPast(b.end_date));
+
   return (
     <>
       <Navbar />
@@ -100,155 +218,138 @@ export default function BookingsPage() {
             Track your childcare requests and confirmed sessions.
           </p>
 
-          {/* Main grid */}
-          <div className="lg:grid lg:grid-cols-3 lg:gap-8 mt-8">
-            {/* Main column */}
-            <div className="lg:col-span-2 flex flex-col gap-6">
-              {/* Confirmed section */}
-              <div>
-                <h2 className="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
-                  <span
-                    className="material-symbols-outlined text-tertiary text-[20px]"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    check_circle
-                  </span>
-                  Confirmed
-                </h2>
-                <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm">
-                  <div className="flex gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
-                      TS
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-base font-bold text-on-surface">Ms. Tara Smith</p>
-                        <span className="bg-tertiary-fixed text-on-tertiary-container text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
-                          Confirmed
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-1.5">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-                          calendar_today
-                        </span>
-                        <span className="text-sm text-on-surface-variant">Jun 16–20</span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-                          schedule
-                        </span>
-                        <span className="text-sm text-on-surface-variant">8am–5pm</span>
-                      </div>
-                      <div className="flex gap-2 mt-3 flex-wrap">
-                        <button className="border border-outline-variant/30 text-primary rounded-xl px-4 py-2 text-xs font-bold hover:bg-primary-fixed/20 transition-all">
-                          Message
-                        </button>
-                        <button className="border border-outline-variant/30 text-primary rounded-xl px-4 py-2 text-xs font-bold hover:bg-primary-fixed/20 transition-all">
-                          Modify
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {error && (
+            <div className="mt-6 rounded-2xl bg-error-container text-on-error-container px-5 py-4 text-sm font-medium">
+              {error}
+            </div>
+          )}
 
-              {/* Pending Requests section */}
-              <div>
-                <h2 className="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary text-[20px]">
-                    schedule
-                  </span>
-                  Pending Requests
-                </h2>
-                <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm">
-                  <div className="flex gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
-                      RC
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-base font-bold text-on-surface">Ms. Rachel Chen</p>
-                        <span className="bg-secondary-fixed text-secondary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
-                          Pending
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-1.5">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-                          calendar_today
-                        </span>
-                        <span className="text-sm text-on-surface-variant">Jun 23–27</span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-                          schedule
-                        </span>
-                        <span className="text-sm text-on-surface-variant">9am–3pm</span>
-                      </div>
-                      <div className="flex gap-2 mt-3 flex-wrap">
-                        <button className="border border-outline-variant/30 text-primary rounded-xl px-4 py-2 text-xs font-bold hover:bg-primary-fixed/20 transition-all">
-                          Message
-                        </button>
-                        <button className="border border-outline-variant/30 text-on-surface-variant rounded-xl px-4 py-2 text-xs font-bold hover:bg-surface-container transition-all">
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {loading && !error && (
+            <div className="mt-12 flex justify-center text-on-surface-variant text-sm">
+              Loading bookings…
+            </div>
+          )}
 
-              {/* Past Sessions section */}
-              <div>
-                <h2 className="text-base font-bold text-on-surface-variant mb-1 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px]">history</span>
-                  Past Sessions
-                </h2>
-                <div className="flex flex-col">
-                  {pastSessions.map((session) => (
-                    <div
-                      key={`${session.dates}-${session.child}`}
-                      className="flex items-center justify-between border-b border-outline-variant/20 py-3 gap-2 flex-wrap"
+          {!loading && !error && (
+            /* Main grid */
+            <div className="lg:grid lg:grid-cols-3 lg:gap-8 mt-8">
+              {/* Main column */}
+              <div className="lg:col-span-2 flex flex-col gap-6">
+                {/* Confirmed section */}
+                <div>
+                  <h2 className="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
+                    <span
+                      className="material-symbols-outlined text-tertiary text-[20px]"
+                      style={{ fontVariationSettings: "'FILL' 1" }}
                     >
-                      <div className="flex items-center gap-2 flex-wrap text-sm text-on-surface-variant">
-                        <span>{session.dates}</span>
-                        <span className="text-outline">·</span>
-                        <span className="font-medium text-on-surface">{session.teacher}</span>
-                        <span className="text-outline">·</span>
-                        <span>{session.child}</span>
-                      </div>
-                      <span className="bg-tertiary-fixed text-on-tertiary-container text-xs px-2 py-0.5 rounded-full font-medium">
-                        Completed
-                      </span>
+                      check_circle
+                    </span>
+                    Confirmed
+                  </h2>
+                  {confirmed.length === 0 ? (
+                    <p className="text-sm text-on-surface-variant py-3">
+                      No confirmed bookings yet.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {confirmed.map((b) => (
+                        <BookingCard key={b.id} booking={b} />
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            </div>
 
-            {/* Sidebar: Summary */}
-            <div className="lg:col-span-1 mt-8 lg:mt-0">
-              <div className="sticky top-24 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm">
-                <h2 className="text-base font-bold text-on-surface mb-4">Summary</h2>
-                <div className="flex flex-col gap-3">
-                  <div className="bg-surface-container-low rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-primary">2</p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">Upcoming</p>
-                  </div>
-                  <div className="bg-surface-container-low rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-secondary">1</p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">Pending</p>
-                  </div>
-                  <div className="bg-surface-container-low rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-on-surface-variant">4</p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">Completed</p>
-                  </div>
+                {/* Pending Requests section */}
+                <div>
+                  <h2 className="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-secondary text-[20px]">
+                      schedule
+                    </span>
+                    Pending Requests
+                  </h2>
+                  {pending.length === 0 ? (
+                    <p className="text-sm text-on-surface-variant py-3">No pending requests.</p>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {pending.map((b) => (
+                        <BookingCard key={b.id} booking={b} />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <button className="w-full mt-4 border border-outline-variant/30 text-on-surface-variant rounded-xl py-2.5 text-sm font-semibold hover:bg-surface-container transition-all">
-                  Download Report
-                </button>
+
+                {/* Past Sessions section */}
+                <div>
+                  <h2 className="text-base font-bold text-on-surface-variant mb-1 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px]">history</span>
+                    Past Sessions
+                  </h2>
+                  {past.length === 0 ? (
+                    <p className="text-sm text-on-surface-variant py-3">No past sessions.</p>
+                  ) : (
+                    <div className="flex flex-col">
+                      {past.map((session) => (
+                        <div
+                          key={session.id}
+                          className="flex items-center justify-between border-b border-outline-variant/20 py-3 gap-2 flex-wrap"
+                        >
+                          <div className="flex items-center gap-2 flex-wrap text-sm text-on-surface-variant">
+                            <span>{formatDateRange(session.start_date, session.end_date)}</span>
+                            <span className="text-outline">·</span>
+                            <span className="font-medium text-on-surface">
+                              {session.teacher_name ?? "Unknown teacher"}
+                            </span>
+                          </div>
+                          <span className="bg-tertiary-fixed text-on-tertiary-container text-xs px-2 py-0.5 rounded-full font-medium">
+                            Completed
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sidebar: Summary */}
+              <div className="lg:col-span-1 mt-8 lg:mt-0">
+                <div className="sticky top-24 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm">
+                  <h2 className="text-base font-bold text-on-surface mb-4">Summary</h2>
+                  <div className="flex flex-col gap-3">
+                    <div className="bg-surface-container-low rounded-xl p-3 text-center">
+                      <p
+                        className="text-2xl font-bold text-primary"
+                        data-testid="sidebar-upcoming-count"
+                      >
+                        {confirmed.length}
+                      </p>
+                      <p className="text-xs text-on-surface-variant mt-0.5">Upcoming</p>
+                    </div>
+                    <div className="bg-surface-container-low rounded-xl p-3 text-center">
+                      <p
+                        className="text-2xl font-bold text-secondary"
+                        data-testid="sidebar-pending-count"
+                      >
+                        {pending.length}
+                      </p>
+                      <p className="text-xs text-on-surface-variant mt-0.5">Pending</p>
+                    </div>
+                    <div className="bg-surface-container-low rounded-xl p-3 text-center">
+                      <p
+                        className="text-2xl font-bold text-on-surface-variant"
+                        data-testid="sidebar-completed-count"
+                      >
+                        {past.length}
+                      </p>
+                      <p className="text-xs text-on-surface-variant mt-0.5">Completed</p>
+                    </div>
+                  </div>
+                  <button className="w-full mt-4 border border-outline-variant/30 text-on-surface-variant rounded-xl py-2.5 text-sm font-semibold hover:bg-surface-container transition-all">
+                    Download Report
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       <MobileBottomNav />
