@@ -53,7 +53,7 @@ function fmtTime(t: string | null): string | null {
   return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-/** Returns "45 hours" or "5 days" depending on whether times are present. */
+/** Returns total hours, defaulting to 8h/day when no time data. */
 function fmtDuration(
   startDate: string,
   endDate: string,
@@ -65,10 +65,9 @@ function fmtDuration(
       (new Date(endDate + "T00:00:00").getTime() - new Date(startDate + "T00:00:00").getTime()) /
         86400000
     ) + 1;
-  if (!startTime || !endTime) return `${days} day${days !== 1 ? "s" : ""}`;
-  const [sh, sm] = startTime.split(":").map(Number);
-  const [eh, em] = endTime.split(":").map(Number);
-  const totalHours = Math.round(days * ((eh * 60 + em - sh * 60 - sm) / 60) * 10) / 10;
+  const [sh, sm] = startTime ? startTime.split(":").map(Number) : [8, 0];
+  const [eh, em] = endTime ? endTime.split(":").map(Number) : [16, 0]; // default 8h day
+  const totalHours = Math.round(days * ((eh * 60 + em - sh * 60 - sm) / 60));
   return `${totalHours} hour${totalHours !== 1 ? "s" : ""}`;
 }
 
@@ -173,22 +172,11 @@ function BookingCard({ booking }: { booking: BookingItem }) {
           className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
         />
 
-        {/* Center: name + status badge + buttons */}
+        {/* Center: name + classroom + buttons */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-base font-bold text-primary">
-              {booking.teacher_name ?? "Unknown teacher"}
-            </p>
-            {isConfirmed ? (
-              <span className="bg-tertiary-fixed text-on-tertiary-container text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-widest">
-                Confirmed
-              </span>
-            ) : (
-              <span className="bg-secondary-fixed text-secondary text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-widest">
-                Pending
-              </span>
-            )}
-          </div>
+          <p className="text-base font-bold text-primary">
+            {booking.teacher_name ?? "Unknown teacher"}
+          </p>
           {booking.teacher_classroom && (
             <p className="text-xs text-on-surface-variant mt-0.5 uppercase tracking-widest">
               {booking.teacher_classroom} Class

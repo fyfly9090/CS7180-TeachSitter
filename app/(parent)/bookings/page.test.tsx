@@ -1,6 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import BookingsPage from "./page";
 
@@ -195,20 +195,14 @@ describe("BookingsPage — booking card UI", () => {
     });
   });
 
-  it("shows CONFIRMED badge for confirmed future booking", async () => {
+  it("does NOT show a status badge inside the booking card", async () => {
     mockFetchBookings([CONFIRMED_FUTURE]);
     render(<BookingsPage />);
-    await waitFor(() => {
-      expect(screen.getAllByText(/confirmed/i).length).toBeGreaterThan(0);
-    });
-  });
-
-  it("shows PENDING badge for pending booking", async () => {
-    mockFetchBookings([PENDING]);
-    render(<BookingsPage />);
-    await waitFor(() => {
-      expect(screen.getAllByText(/pending/i).length).toBeGreaterThan(0);
-    });
+    await waitFor(() => expect(screen.getByText("Ms. Tara Smith")).toBeInTheDocument());
+    // Scope to the card element — section headings are outside the card
+    const card = screen.getByText("Ms. Tara Smith").closest(".rounded-2xl") as HTMLElement;
+    expect(within(card).queryAllByText("Confirmed")).toHaveLength(0);
+    expect(within(card).queryAllByText("Pending")).toHaveLength(0);
   });
 
   it("shows Message button", async () => {
@@ -242,12 +236,12 @@ describe("BookingsPage — Past History sidebar", () => {
     });
   });
 
-  it("shows duration in Past History sidebar", async () => {
+  it("shows hours (not days) in Past History sidebar", async () => {
     mockFetchBookings([CONFIRMED_PAST]);
     render(<BookingsPage />);
     await waitFor(() => {
-      // 2024-01-06 to 2024-01-10 = 5 days, no times → "5 days"
-      expect(screen.getByText(/5 days/i)).toBeInTheDocument();
+      // 2024-01-06 to 2024-01-10 = 5 days × 8h default = 40 hours
+      expect(screen.getByText(/40 hours/i)).toBeInTheDocument();
     });
   });
 
