@@ -26,7 +26,7 @@ export interface Teacher {
   user_id: string; // FK → profiles.id
   classroom: string;
   bio: string;
-  expertise: string[]; // e.g. ["Art & Crafts", "STEM Activities"] — added in migration 006
+  expertise?: string[]; // e.g. ["Art & Crafts", "STEM Activities"] — added in migration 006; optional since not all queries select it
   hourly_rate: number | null; // e.g. 45.00 — null if not set
   full_name: string | null; // e.g. "Ms. Tara Smith" — null if migration 005 not applied
   position: string | null; // e.g. "Preschool Teacher" — null if migration 005 not applied
