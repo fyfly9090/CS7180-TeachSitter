@@ -26,6 +26,7 @@ export interface Teacher {
   user_id: string; // FK → profiles.id
   classroom: string;
   bio: string;
+  expertise?: string[]; // e.g. ["Art & Crafts", "STEM Activities"] — added in migration 006; optional since not all queries select it
   hourly_rate: number | null; // e.g. 45.00 — null if not set
   full_name: string | null; // e.g. "Ms. Tara Smith" — null if migration 005 not applied
   position: string | null; // e.g. "Preschool Teacher" — null if migration 005 not applied
@@ -125,7 +126,14 @@ export interface Database {
       teachers: {
         Row: DbRow<Teacher>;
         Insert: DbRow<Omit<Teacher, "id" | "created_at">>;
-        Update: DbRow<Partial<Omit<Teacher, "id" | "user_id" | "created_at">>>;
+        Update: DbRow<
+          Partial<
+            Pick<
+              Teacher,
+              "classroom" | "bio" | "expertise" | "hourly_rate" | "full_name" | "position"
+            >
+          >
+        >;
         Relationships: [];
       };
       availability: {
