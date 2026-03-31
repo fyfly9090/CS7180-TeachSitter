@@ -28,7 +28,7 @@ export const PATCH = withApiHandler(async (req: Request, ctx: unknown) => {
     .single();
 
   if (lookupError || !ownRow) throw errors.notFound("Teacher profile not found");
-  if ((ownRow as Pick<Teacher, "id">).id !== id) throw errors.forbidden();
+  if ((ownRow as unknown as Pick<Teacher, "id">).id !== id) throw errors.forbidden();
 
   // Update teacher profile
   const { data: updated, error: updateError } = await supabase

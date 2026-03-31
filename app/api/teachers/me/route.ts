@@ -28,13 +28,13 @@ export const GET = withApiHandler(async () => {
   const { data: availability, error: availError } = await supabase
     .from("availability")
     .select("id, teacher_id, start_date, end_date, start_time, end_time, is_booked, created_at")
-    .eq("teacher_id", (teacher as Teacher).id)
+    .eq("teacher_id", (teacher as unknown as Teacher).id)
     .order("start_date", { ascending: true });
 
   if (availError) throw errors.internal();
 
   return NextResponse.json({
-    teacher: teacher as Teacher,
-    availability: (availability ?? []) as Availability[],
+    teacher: teacher as unknown as Teacher,
+    availability: (availability ?? []) as unknown as Availability[],
   });
 });
