@@ -27,7 +27,17 @@ export const GET = withApiHandler(async () => {
 
   if (error) throw errors.internal();
 
-  const rows = data ?? [];
+  type BookingRow = {
+    id: string;
+    teacher_id: string;
+    start_date: string;
+    end_date: string;
+    status: string;
+    message: string | null;
+    created_at: string;
+    teachers: { full_name: string | null; classroom: string } | null;
+  };
+  const rows = (data ?? []) as BookingRow[];
 
   // Batch-fetch availability times for all relevant teachers
   const teacherIds = [...new Set(rows.map((r) => r.teacher_id))];
