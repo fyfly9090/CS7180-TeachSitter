@@ -16,10 +16,7 @@ vi.mock("../lib/supabase/server", () => ({
 
 vi.mock("../lib/ai/gemini", () => ({
   rankTeachers: vi.fn(),
-}));
-
-vi.mock("../lib/ai/claude", () => ({
-  rankTeachers: vi.fn(),
+  judgeRanking: vi.fn(),
 }));
 
 // Keep matchTeachers as a real deterministic fallback (no AI needed)
@@ -40,7 +37,6 @@ vi.mock("../lib/ai/match", () => ({
 
 import { createServerClient } from "../lib/supabase/server";
 import { rankTeachers as rankGemini } from "../lib/ai/gemini";
-import { rankTeachers as rankClaude } from "../lib/ai/claude";
 import { POST } from "../app/api/match/route";
 
 // ---------------------------------------------------------------------------
@@ -171,10 +167,9 @@ describe("POST /api/match — auth + validation", () => {
 describe("POST /api/match — AI race", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  test("returns 200 with ranked_teachers and eval_id when Gemini wins", async () => {
+  test("returns 200 with ranked_teachers and eval_id when Gemini succeeds", async () => {
     mockSupabase(PARENT_USER);
     vi.mocked(rankGemini).mockResolvedValue(RANKED_RESULT);
-    vi.mocked(rankClaude).mockResolvedValue(RANKED_RESULT);
 
     const res = await POST(makePostRequest(VALID_BODY));
 
@@ -184,22 +179,9 @@ describe("POST /api/match — AI race", () => {
     expect(body.eval_id).toBe(EVAL_ID);
   });
 
-  test("returns 200 when Claude wins (Gemini rejects)", async () => {
-    mockSupabase(PARENT_USER);
-    vi.mocked(rankGemini).mockRejectedValue(new Error("Gemini unavailable"));
-    vi.mocked(rankClaude).mockResolvedValue(RANKED_RESULT);
-
-    const res = await POST(makePostRequest(VALID_BODY));
-
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.ranked_teachers).toHaveLength(2);
-  });
-
-  test("returns 200 with fallback deterministic ranking when both AI providers fail", async () => {
+  test("returns 200 with fallback deterministic ranking when Gemini fails", async () => {
     mockSupabase(PARENT_USER);
     vi.mocked(rankGemini).mockRejectedValue(new Error("Gemini down"));
-    vi.mocked(rankClaude).mockRejectedValue(new Error("Claude down"));
 
     const res = await POST(makePostRequest(VALID_BODY));
 
@@ -212,7 +194,6 @@ describe("POST /api/match — AI race", () => {
   test("ranked_teachers has id, name, rank, and reasoning fields", async () => {
     mockSupabase(PARENT_USER);
     vi.mocked(rankGemini).mockResolvedValue(RANKED_RESULT);
-    vi.mocked(rankClaude).mockResolvedValue(RANKED_RESULT);
 
     const res = await POST(makePostRequest(VALID_BODY));
     const body = await res.json();
@@ -236,7 +217,6 @@ describe("POST /api/match — eval logging", () => {
   test("inserts a match_evals row on every successful call", async () => {
     const chain = mockSupabase(PARENT_USER);
     vi.mocked(rankGemini).mockResolvedValue(RANKED_RESULT);
-    vi.mocked(rankClaude).mockResolvedValue(RANKED_RESULT);
 
     await POST(makePostRequest(VALID_BODY));
 
@@ -249,7 +229,6 @@ describe("POST /api/match — eval logging", () => {
   test("eval_id in response matches the inserted row id", async () => {
     mockSupabase(PARENT_USER, { id: "abc-eval-123" });
     vi.mocked(rankGemini).mockResolvedValue(RANKED_RESULT);
-    vi.mocked(rankClaude).mockResolvedValue(RANKED_RESULT);
 
     const res = await POST(makePostRequest(VALID_BODY));
     const body = await res.json();

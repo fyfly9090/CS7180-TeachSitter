@@ -19,10 +19,19 @@ interface RankedTeacher extends Teacher {
  * Primary signal: same classroom as child (highest familiarity).
  */
 export async function matchTeachers(parent: Parent, teachers: Teacher[]): Promise<RankedTeacher[]> {
+  const hasClassroom = parent.child_classroom !== "";
+
   const ranked = teachers
     .map((teacher) => {
-      const isSameClassroom = teacher.classroom === parent.child_classroom;
+      if (!hasClassroom) {
+        return {
+          ...teacher,
+          rank: 1,
+          reasoning: "Available during your requested dates.",
+        };
+      }
 
+      const isSameClassroom = teacher.classroom === parent.child_classroom;
       return {
         ...teacher,
         rank: isSameClassroom ? 1 : 2,

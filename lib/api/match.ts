@@ -1,7 +1,6 @@
 // Match API business logic: parallel AI race + eval logging + async judge.
 
-import { rankTeachers as rankGemini } from "@/lib/ai/gemini";
-import { rankTeachers as rankClaude, judgeRanking } from "@/lib/ai/claude";
+import { rankTeachers as rankGemini, judgeRanking } from "@/lib/ai/gemini";
 import { matchTeachers } from "@/lib/ai/match";
 import type { MatchRequestInput } from "@/lib/validations";
 import type { RankedTeacher } from "@/types";
@@ -23,12 +22,11 @@ export async function runMatch(
   input: MatchRequestInput,
   supabase: SupabaseClient
 ): Promise<MatchResult> {
-  // 1. Race both AI providers; AggregateError means both failed
+  // 1. Try Gemini; fall back to deterministic matching if it fails
   let ranked: RankedTeacher[];
   try {
-    ranked = await Promise.any([rankGemini(input), rankClaude(input)]);
+    ranked = await rankGemini(input);
   } catch {
-    // Both providers failed — use deterministic fallback
     ranked = await matchTeachers({ child_classroom: input.child_classroom }, input.teachers);
   }
 
