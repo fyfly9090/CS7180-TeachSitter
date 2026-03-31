@@ -11,6 +11,7 @@
 Full implementation of the `/teacher/setup` page and its supporting API layer.
 
 ### New files
+
 - `app/teacher/setup/page.tsx` — Two-column profile setup page matching the approved mockup
 - `app/api/teachers/me/route.ts` — `GET` endpoint: returns the authenticated teacher's profile + availability
 - `app/api/teachers/[id]/route.ts` — `PATCH` endpoint: updates classroom, bio, expertise, and replaces availability blocks
@@ -22,6 +23,7 @@ Full implementation of the `/teacher/setup` page and its supporting API layer.
 - `__tests__/expertise-toggle.test.ts` — 5 property-based tests via fast-check
 
 ### Modified files
+
 - `lib/validations/index.ts` — Added `availabilityBlockSchema` and `availability` field to `updateTeacherProfileSchema`
 - `types/index.ts` — Added `expertise: string[]` to `Teacher` interface; tightened `Database.teachers.Update`
 - `package.json` / `vitest.config.ts` — Switched test environment from `jsdom` to `happy-dom` for component tests
