@@ -14,6 +14,10 @@ vi.mock("../lib/supabase/server", () => ({
   createServerClient: vi.fn(),
 }));
 
+vi.mock("../lib/supabase/admin", () => ({
+  createAdminClient: vi.fn(),
+}));
+
 vi.mock("../lib/ai/gemini", () => ({
   rankTeachers: vi.fn(),
   judgeRanking: vi.fn(),
@@ -36,6 +40,7 @@ vi.mock("../lib/ai/match", () => ({
 // ---------------------------------------------------------------------------
 
 import { createServerClient } from "../lib/supabase/server";
+import { createAdminClient } from "../lib/supabase/admin";
 import { rankTeachers as rankGemini } from "../lib/ai/gemini";
 import { POST } from "../app/api/match/route";
 
@@ -70,7 +75,7 @@ const VALID_BODY = {
   teachers: TEACHERS_INPUT,
 };
 
-/** Mock createServerClient: auth user + from() chain for match_evals insert */
+/** Mock createServerClient (auth only) and createAdminClient (match_evals DB writes). */
 function mockSupabase(user: object | null, evalInsertData: object | null = { id: EVAL_ID }) {
   const insertChain = {
     insert: vi.fn().mockReturnThis(),
@@ -86,6 +91,8 @@ function mockSupabase(user: object | null, evalInsertData: object | null = { id:
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }),
     },
+  } as never);
+  vi.mocked(createAdminClient).mockReturnValue({
     from: vi.fn().mockReturnValue(insertChain),
   } as never);
   return insertChain;

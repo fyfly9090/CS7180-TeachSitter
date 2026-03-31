@@ -8,7 +8,8 @@
 import React from "react";
 import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
-import { vi, describe, it, expect, afterEach } from "vitest";
+import { vi, describe, it, expect, afterEach, beforeEach } from "vitest";
+import { waitFor } from "@testing-library/react";
 import SearchClient from "./SearchClient";
 
 vi.mock("next/navigation", () => ({
@@ -73,6 +74,12 @@ const DEFAULT_PROPS = {
   initialDateFrom: "2026-06-16",
   initialDateTo: "2026-06-20",
   initialClassroom: "",
+  parentId: "",
+};
+
+const AUTHED_PROPS = {
+  ...DEFAULT_PROPS,
+  parentId: "00000000-0000-0000-0000-000000000001",
 };
 
 describe("SearchClient — page header", () => {
@@ -213,5 +220,146 @@ describe("SearchClient — booking link", () => {
     const links = screen.getAllByRole("link", { name: /^book \w/i });
     expect(links[0]).toHaveAttribute("href", expect.stringContaining("start_date=2026-06-16"));
     expect(links[0]).toHaveAttribute("href", expect.stringContaining("end_date=2026-06-20"));
+  });
+});
+
+// ── Rank badges ───────────────────────────────────────────────────────────────
+
+describe("SearchClient — rank badges", () => {
+  it("shows rank badge when teacher has rank", () => {
+    const withRank = [{ ...BASE_TEACHER, rank: 1, reasoning: "Best match." }];
+    render(<SearchClient {...DEFAULT_PROPS} initialTeachers={withRank} />);
+    expect(screen.getByTestId("rank-badge-1")).toBeInTheDocument();
+    expect(screen.getByTestId("rank-badge-1")).toHaveTextContent("#1 Match");
+  });
+
+  it("shows correct rank number for second-ranked teacher", () => {
+    const withRanks = [
+      { ...BASE_TEACHER, rank: 1, reasoning: "Best match." },
+      { ...BASE_TEACHER_2, rank: 2, reasoning: "Good match." },
+    ];
+    render(<SearchClient {...DEFAULT_PROPS} initialTeachers={withRanks} />);
+    expect(screen.getByTestId("rank-badge-1")).toHaveTextContent("#1 Match");
+    expect(screen.getByTestId("rank-badge-2")).toHaveTextContent("#2 Match");
+  });
+
+  it("omits rank badge when teacher has no rank", () => {
+    render(<SearchClient {...DEFAULT_PROPS} />);
+    expect(screen.queryByTestId("rank-badge-1")).not.toBeInTheDocument();
+  });
+});
+
+// ── AI ranking loading indicator ──────────────────────────────────────────────
+
+describe("SearchClient — AI ranking loading indicator", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("shows AI ranking indicator while /api/match is pending (authed, dates set)", async () => {
+    // fetch never resolves — simulates slow AI response
+    vi.mocked(fetch).mockReturnValue(new Promise(() => {}));
+    render(<SearchClient {...AUTHED_PROPS} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("ai-ranking-loading")).toBeInTheDocument();
+    });
+  });
+
+  it("hides AI ranking indicator after /api/match resolves", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ranked_teachers: [{ id: "teacher-1", rank: 1, reasoning: "Top pick." }],
+          eval_id: "eval-uuid",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+    render(<SearchClient {...AUTHED_PROPS} />);
+    await waitFor(() => {
+      expect(screen.queryByTestId("ai-ranking-loading")).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows unranked results gracefully when /api/match returns non-ok", async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 502 }));
+    render(<SearchClient {...AUTHED_PROPS} />);
+    await waitFor(() => {
+      expect(screen.queryByTestId("ai-ranking-loading")).not.toBeInTheDocument();
+    });
+    // Original teachers still shown
+    expect(screen.getByText("Ms. Tara Smith")).toBeInTheDocument();
+  });
+
+  it("shows unranked results gracefully when /api/match throws", async () => {
+    vi.mocked(fetch).mockRejectedValue(new Error("network error"));
+    render(<SearchClient {...AUTHED_PROPS} />);
+    await waitFor(() => {
+      expect(screen.queryByTestId("ai-ranking-loading")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Ms. Tara Smith")).toBeInTheDocument();
+  });
+
+  it("does not call /api/match when parentId is empty", async () => {
+    render(<SearchClient {...DEFAULT_PROPS} parentId="" />);
+    // Wait a tick to ensure no fetch was attempted
+    await new Promise((r) => setTimeout(r, 50));
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("does not show AI ranking loading when no dates are set", async () => {
+    render(
+      <SearchClient
+        {...AUTHED_PROPS}
+        initialDateFrom=""
+        initialDateTo=""
+        initialTeachers={[BASE_TEACHER]}
+      />
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByTestId("ai-ranking-loading")).not.toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+// ── AI ranking re-orders results ──────────────────────────────────────────────
+
+describe("SearchClient — AI ranking re-orders results", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("re-orders teachers by rank and shows reasoning after /api/match resolves", async () => {
+    // teacher-2 ranked first, teacher-1 ranked second
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ranked_teachers: [
+              { id: "teacher-2", rank: 1, reasoning: "Matching classroom." },
+              { id: "teacher-1", rank: 2, reasoning: "Good availability." },
+            ],
+            eval_id: "eval-uuid",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      )
+    );
+
+    render(<SearchClient {...AUTHED_PROPS} />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("ai-ranking-loading")).not.toBeInTheDocument();
+    });
+
+    // Both rank badges present
+    expect(screen.getByTestId("rank-badge-1")).toBeInTheDocument();
+    expect(screen.getByTestId("rank-badge-2")).toBeInTheDocument();
+
+    // Reasoning boxes shown for both
+    const reasoningBoxes = screen.getAllByTestId("ai-reasoning");
+    expect(reasoningBoxes).toHaveLength(2);
   });
 });

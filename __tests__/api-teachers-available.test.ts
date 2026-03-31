@@ -224,13 +224,27 @@ describe("getAvailableTeachers — Supabase query", () => {
     vi.mocked(redis.set).mockResolvedValue("OK");
   });
 
-  test("applies lte(availability.start_date) and gte(availability.end_date)", async () => {
+  test("uses overlap query: lte(start_date, search.end_date) and gte(end_date, search.start_date)", async () => {
+    // Overlap condition: teacher.start_date ≤ search.end_date AND teacher.end_date ≥ search.start_date
+    // This ensures a wider search range (e.g. 2026-06-10→2026-06-25) still finds teachers
+    // whose availability (e.g. 2026-06-16→2026-06-20) overlaps the range.
     const chain = mockSupabaseQuery(makeQueryChain([]));
 
     await getAvailableTeachers({ start_date: "2026-06-16", end_date: "2026-06-20" });
 
-    expect(chain.lte).toHaveBeenCalledWith("availability.start_date", "2026-06-16");
-    expect(chain.gte).toHaveBeenCalledWith("availability.end_date", "2026-06-20");
+    expect(chain.lte).toHaveBeenCalledWith("availability.start_date", "2026-06-20");
+    expect(chain.gte).toHaveBeenCalledWith("availability.end_date", "2026-06-16");
+  });
+
+  test("wider search range overlapping teacher availability returns that teacher", async () => {
+    // Teacher available 2026-06-16→2026-06-20; parent searches 2026-06-10→2026-06-25.
+    // The ranges overlap so the teacher should be returned.
+    const chain = mockSupabaseQuery(makeQueryChain([TEACHER_ROW]));
+
+    await getAvailableTeachers({ start_date: "2026-06-10", end_date: "2026-06-25" });
+
+    expect(chain.lte).toHaveBeenCalledWith("availability.start_date", "2026-06-25");
+    expect(chain.gte).toHaveBeenCalledWith("availability.end_date", "2026-06-10");
   });
 
   test("filters booked slots with eq(availability.is_booked, false)", async () => {

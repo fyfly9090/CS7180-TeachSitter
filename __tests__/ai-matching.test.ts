@@ -30,7 +30,7 @@ describe("AI Teacher Matching Logic", () => {
     }
   });
 
-  test("should give all teachers the same rank when no classroom is specified", async () => {
+  test("should give teachers sequential unique ranks when no classroom is specified", async () => {
     const mockParent = { child_classroom: "" };
     const mockTeachers = [
       { id: "1", name: "Teacher A", classroom: "Rose" },
@@ -39,6 +39,8 @@ describe("AI Teacher Matching Logic", () => {
 
     const result = await matchTeachers(mockParent, mockTeachers);
 
-    expect(result[0].rank).toBe(result[1].rank);
+    // Each teacher gets a unique sequential rank (1, 2, ...) so badges don't collide
+    const ranks = result.map((t) => t.rank);
+    expect(ranks).toEqual([1, 2]);
   });
 });
