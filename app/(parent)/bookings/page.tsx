@@ -155,9 +155,182 @@ function MobileBottomNav() {
   );
 }
 
+// ── BookingModifyModal ─────────────────────────────────────────────────────────
+
+function BookingModifyModal({
+  booking,
+  onClose,
+  onSuccess,
+}: {
+  booking: BookingItem;
+  onClose: () => void;
+  onSuccess: (
+    bookingId: string,
+    startDate: string,
+    endDate: string,
+    message: string | null
+  ) => void;
+}) {
+  const [startDate, setStartDate] = useState(booking.start_date);
+  const [endDate, setEndDate] = useState(booking.end_date);
+  const [message, setMessage] = useState(booking.message ?? "");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          start_date: startDate,
+          end_date: endDate,
+          message: message.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: { message?: string } };
+        setError(data.error?.message ?? "Failed to update booking. Please try again.");
+        return;
+      }
+      onSuccess(booking.id, startDate, endDate, message.trim() || null);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modify-modal-title"
+        className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md shadow-xl"
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h2 id="modify-modal-title" className="text-lg font-bold text-on-surface">
+            Modify Booking
+          </h2>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="p-1.5 rounded-full hover:bg-surface-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-on-surface-variant text-[20px]">
+              close
+            </span>
+          </button>
+        </div>
+
+        {/* Teacher summary */}
+        <div className="flex items-center gap-3 mb-5 pb-5 border-b border-outline-variant/20">
+          <img
+            src={teacherPhotoSrc(booking.teacher_id)}
+            alt={booking.teacher_name ?? "Teacher"}
+            className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+          />
+          <div>
+            <p className="text-sm font-bold text-on-surface">
+              {booking.teacher_name ?? "Unknown teacher"}
+            </p>
+            {booking.teacher_classroom && (
+              <p className="text-xs text-on-surface-variant mt-0.5 uppercase tracking-widest">
+                {booking.teacher_classroom} Class
+              </p>
+            )}
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Date range */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col gap-1.5 flex-1">
+              <label
+                htmlFor="modify-start-date"
+                className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+              >
+                Start Date
+              </label>
+              <input
+                id="modify-start-date"
+                type="date"
+                required
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2.5 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-on-surface"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5 flex-1">
+              <label
+                htmlFor="modify-end-date"
+                className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+              >
+                End Date
+              </label>
+              <input
+                id="modify-end-date"
+                type="date"
+                required
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2.5 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-on-surface"
+              />
+            </div>
+          </div>
+
+          {/* Message */}
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="modify-message"
+              className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Message <span className="normal-case font-normal">(optional)</span>
+            </label>
+            <textarea
+              id="modify-message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              maxLength={500}
+              rows={3}
+              className="w-full px-3 py-2.5 bg-surface-container-lowest border border-outline-variant/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-on-surface resize-none"
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-error bg-error-container/20 rounded-xl px-4 py-2.5">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold rounded-xl shadow-sm hover:opacity-90 active:scale-95 transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Updating…" : "Update Booking"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── BookingCard ────────────────────────────────────────────────────────────────
 
-function BookingCard({ booking }: { booking: BookingItem }) {
+function BookingCard({
+  booking,
+  onModify,
+  onCancel,
+}: {
+  booking: BookingItem;
+  onModify: () => void;
+  onCancel: () => void;
+}) {
   const isConfirmed = booking.status === "confirmed";
   const startFmt = fmtTime(booking.start_time);
   const endFmt = fmtTime(booking.end_time);
@@ -186,7 +359,10 @@ function BookingCard({ booking }: { booking: BookingItem }) {
             <button className="bg-primary text-on-primary rounded-full px-5 py-1.5 text-xs font-bold hover:bg-primary/90 transition-all">
               Message
             </button>
-            <button className="border border-outline-variant/40 text-on-surface rounded-full px-5 py-1.5 text-xs font-semibold hover:bg-surface-container transition-all">
+            <button
+              onClick={isConfirmed ? onModify : onCancel}
+              className="border border-outline-variant/40 text-on-surface rounded-full px-5 py-1.5 text-xs font-semibold hover:bg-surface-container transition-all"
+            >
               {isConfirmed ? "Modify Booking" : "Cancel"}
             </button>
           </div>
@@ -260,6 +436,7 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<BookingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modifyTarget, setModifyTarget] = useState<BookingItem | null>(null);
 
   useEffect(() => {
     fetch("/api/bookings")
@@ -272,6 +449,35 @@ export default function BookingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  async function handleCancel(bookingId: string) {
+    const res = await fetch(`/api/bookings/${bookingId}`, { method: "DELETE" });
+    if (res.ok) {
+      setBookings((prev) => prev.filter((b) => b.id !== bookingId));
+    }
+  }
+
+  function handleModifySuccess(
+    bookingId: string,
+    newStartDate: string,
+    newEndDate: string,
+    newMessage: string | null
+  ) {
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === bookingId
+          ? {
+              ...b,
+              start_date: newStartDate,
+              end_date: newEndDate,
+              status: "pending",
+              message: newMessage,
+            }
+          : b
+      )
+    );
+    setModifyTarget(null);
+  }
+
   const confirmed = bookings.filter((b) => b.status === "confirmed" && !isInPast(b.end_date));
   const pending = bookings.filter((b) => b.status === "pending");
   const past = bookings.filter((b) => b.status === "confirmed" && isInPast(b.end_date));
@@ -279,6 +485,13 @@ export default function BookingsPage() {
   return (
     <>
       <Navbar />
+      {modifyTarget && (
+        <BookingModifyModal
+          booking={modifyTarget}
+          onClose={() => setModifyTarget(null)}
+          onSuccess={handleModifySuccess}
+        />
+      )}
       <div className="pt-16 pb-24 md:pb-8 bg-background min-h-screen">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
           <h1 className="text-3xl font-bold text-on-surface">My Bookings</h1>
@@ -320,7 +533,12 @@ export default function BookingsPage() {
                   ) : (
                     <div className="flex flex-col gap-4">
                       {confirmed.map((b) => (
-                        <BookingCard key={b.id} booking={b} />
+                        <BookingCard
+                          key={b.id}
+                          booking={b}
+                          onModify={() => setModifyTarget(b)}
+                          onCancel={() => handleCancel(b.id)}
+                        />
                       ))}
                     </div>
                   )}
@@ -339,7 +557,12 @@ export default function BookingsPage() {
                   ) : (
                     <div className="flex flex-col gap-4">
                       {pending.map((b) => (
-                        <BookingCard key={b.id} booking={b} />
+                        <BookingCard
+                          key={b.id}
+                          booking={b}
+                          onModify={() => setModifyTarget(b)}
+                          onCancel={() => handleCancel(b.id)}
+                        />
                       ))}
                     </div>
                   )}

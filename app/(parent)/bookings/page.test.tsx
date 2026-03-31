@@ -1,6 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import BookingsPage from "./page";
 
@@ -295,6 +295,144 @@ describe("BookingsPage — error state", () => {
     render(<BookingsPage />);
     await waitFor(() => {
       expect(screen.getByText(/failed to load bookings/i)).toBeInTheDocument();
+    });
+  });
+});
+
+describe("BookingsPage — Modify Booking modal", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("opens modify modal when Modify Booking button is clicked", async () => {
+    mockFetchBookings([CONFIRMED_FUTURE]);
+    render(<BookingsPage />);
+    await waitFor(() => screen.getByRole("button", { name: /modify booking/i }));
+    fireEvent.click(screen.getByRole("button", { name: /modify booking/i }));
+    expect(screen.getByRole("dialog", { name: /modify booking/i })).toBeInTheDocument();
+  });
+
+  it("modal contains Start Date and End Date inputs", async () => {
+    mockFetchBookings([CONFIRMED_FUTURE]);
+    render(<BookingsPage />);
+    await waitFor(() => screen.getByRole("button", { name: /modify booking/i }));
+    fireEvent.click(screen.getByRole("button", { name: /modify booking/i }));
+    expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
+  });
+
+  it("modal pre-fills dates with current booking dates", async () => {
+    mockFetchBookings([CONFIRMED_FUTURE]);
+    render(<BookingsPage />);
+    await waitFor(() => screen.getByRole("button", { name: /modify booking/i }));
+    fireEvent.click(screen.getByRole("button", { name: /modify booking/i }));
+    const startInput = screen.getByLabelText(/start date/i) as HTMLInputElement;
+    const endInput = screen.getByLabelText(/end date/i) as HTMLInputElement;
+    expect(startInput.value).toBe(CONFIRMED_FUTURE.start_date);
+    expect(endInput.value).toBe(CONFIRMED_FUTURE.end_date);
+  });
+
+  it("calls PATCH /api/bookings/{id} on submit", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ bookings: [CONFIRMED_FUTURE] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ booking: { id: CONFIRMED_FUTURE.id, status: "pending" } }),
+      });
+    render(<BookingsPage />);
+    await waitFor(() => screen.getByRole("button", { name: /modify booking/i }));
+    fireEvent.click(screen.getByRole("button", { name: /modify booking/i }));
+    fireEvent.click(screen.getByRole("button", { name: /update booking/i }));
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        `/api/bookings/${CONFIRMED_FUTURE.id}`,
+        expect.objectContaining({ method: "PATCH" })
+      );
+    });
+  });
+
+  it("moves booking to Pending section after successful modify", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ bookings: [CONFIRMED_FUTURE] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ booking: { id: CONFIRMED_FUTURE.id, status: "pending" } }),
+      });
+    render(<BookingsPage />);
+    await waitFor(() => screen.getByRole("button", { name: /modify booking/i }));
+    fireEvent.click(screen.getByRole("button", { name: /modify booking/i }));
+    fireEvent.click(screen.getByRole("button", { name: /update booking/i }));
+    // After success, Cancel button should appear (booking is now pending)
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
+    });
+    // Modify Booking button should be gone (no longer a confirmed future booking)
+    expect(screen.queryByRole("button", { name: /modify booking/i })).not.toBeInTheDocument();
+  });
+
+  it("closes modal after successful modify", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ bookings: [CONFIRMED_FUTURE] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ booking: { id: CONFIRMED_FUTURE.id, status: "pending" } }),
+      });
+    render(<BookingsPage />);
+    await waitFor(() => screen.getByRole("button", { name: /modify booking/i }));
+    fireEvent.click(screen.getByRole("button", { name: /modify booking/i }));
+    fireEvent.click(screen.getByRole("button", { name: /update booking/i }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: /modify booking/i })).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe("BookingsPage — Cancel booking", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("calls DELETE /api/bookings/{id} when Cancel is clicked", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ bookings: [PENDING] }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
+    render(<BookingsPage />);
+    await waitFor(() => screen.getByRole("button", { name: /cancel/i }));
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        `/api/bookings/${PENDING.id}`,
+        expect.objectContaining({ method: "DELETE" })
+      );
+    });
+  });
+
+  it("removes booking from list after successful cancel", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ bookings: [PENDING] }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
+    render(<BookingsPage />);
+    await waitFor(() => screen.getByText("Ms. Rachel Chen"));
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    await waitFor(() => {
+      expect(screen.queryByText("Ms. Rachel Chen")).not.toBeInTheDocument();
     });
   });
 });
