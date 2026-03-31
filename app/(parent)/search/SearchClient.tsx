@@ -219,7 +219,10 @@ function TeacherCard({
     `&teacher_name=${encodeURIComponent(displayName)}` +
     `&classroom=${encodeURIComponent(teacher.classroom)}` +
     (dateFrom ? `&start_date=${encodeURIComponent(dateFrom)}` : "") +
-    (dateTo ? `&end_date=${encodeURIComponent(dateTo)}` : "");
+    (dateTo ? `&end_date=${encodeURIComponent(dateTo)}` : "") +
+    (teacher.availability.length > 0
+      ? `&availability=${encodeURIComponent(JSON.stringify(teacher.availability))}`
+      : "");
 
   const avail = teacher.availability[0];
 
