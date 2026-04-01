@@ -1,6 +1,6 @@
 // GET /api/teachers/me/bookings — Returns the authenticated teacher's bookings
-// split into confirmed and pending lists. Pending bookings are enriched with
-// parent email + display name via the service client (bypasses RLS on profiles).
+// split into confirmed and pending lists. Both are enriched with parent email +
+// display name via the service client (bypasses RLS on profiles).
 
 import { NextResponse } from "next/server";
 import { withApiHandler, errors } from "@/lib/errors";
@@ -8,6 +8,17 @@ import { createServerClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { emailToDisplayName } from "@/lib/utils/format";
 import type { Teacher, Booking, BookingWithParent } from "@/types";
+
+function enrichBookings(bookings: Booking[], profileMap: Map<string, string>): BookingWithParent[] {
+  return bookings.map((b) => {
+    const email = profileMap.get(b.parent_id) ?? "";
+    return {
+      ...b,
+      parent_email: email,
+      parent_display_name: email ? emailToDisplayName(email) : "Parent",
+    };
+  });
+}
 
 export const GET = withApiHandler(async () => {
   const supabase = await createServerClient();
@@ -39,35 +50,29 @@ export const GET = withApiHandler(async () => {
   if (bookingsError) throw errors.internal();
 
   const allBookings = (bookings ?? []) as unknown as Booking[];
-  const confirmed = allBookings.filter((b) => b.status === "confirmed");
+  const confirmedRaw = allBookings.filter((b) => b.status === "confirmed");
   const pendingRaw = allBookings.filter((b) => b.status === "pending");
 
-  // Enrich pending bookings with parent email via service client (bypasses RLS)
-  let pending: BookingWithParent[] = [];
-  if (pendingRaw.length > 0) {
-    const parentIds = [...new Set(pendingRaw.map((b) => b.parent_id))];
+  // Enrich all bookings with parent email via service client (bypasses RLS)
+  const allParentIds = [...new Set(allBookings.map((b) => b.parent_id))];
+  const profileMap = new Map<string, string>();
+
+  if (allParentIds.length > 0) {
     const serviceClient = createServiceClient();
     const { data: profiles } = await serviceClient
       .from("profiles")
       .select("id, email")
-      .in("id", parentIds);
+      .in("id", allParentIds);
 
-    const profileMap = new Map<string, string>();
     if (profiles) {
       for (const p of profiles as unknown as { id: string; email: string }[]) {
         profileMap.set(p.id, p.email);
       }
     }
-
-    pending = pendingRaw.map((b) => {
-      const email = profileMap.get(b.parent_id) ?? "";
-      return {
-        ...b,
-        parent_email: email,
-        parent_display_name: email ? emailToDisplayName(email) : "Parent",
-      };
-    });
   }
 
-  return NextResponse.json({ confirmed, pending });
+  return NextResponse.json({
+    confirmed: enrichBookings(confirmedRaw, profileMap),
+    pending: enrichBookings(pendingRaw, profileMap),
+  });
 });

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { formatDateRange } from "@/lib/utils/format";
-import type { Booking, BookingWithParent, Teacher } from "@/types";
+import type { BookingWithParent, Teacher } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Shared Navbar
@@ -108,7 +108,7 @@ function MobileBottomNav() {
 
 export default function TeacherDashboardPage() {
   const [teacherName, setTeacherName] = useState("Teacher");
-  const [confirmed, setConfirmed] = useState<Booking[]>([]);
+  const [confirmed, setConfirmed] = useState<BookingWithParent[]>([]);
   const [pending, setPending] = useState<BookingWithParent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,7 +124,7 @@ export default function TeacherDashboardPage() {
           setTeacherName((meData.teacher as Teacher).full_name ?? "Teacher");
         }
         if (bookingsData) {
-          setConfirmed((bookingsData as { confirmed: Booking[] }).confirmed ?? []);
+          setConfirmed((bookingsData as { confirmed: BookingWithParent[] }).confirmed ?? []);
           setPending((bookingsData as { pending: BookingWithParent[] }).pending ?? []);
         } else {
           setError("Unable to load bookings.");
@@ -233,7 +233,12 @@ export default function TeacherDashboardPage() {
 
                   <div className="flex flex-col gap-3">
                     {confirmed.map((session) => {
-                      const initials = session.parent_id.slice(0, 2).toUpperCase();
+                      const initials = session.parent_display_name
+                        .split(" ")
+                        .map((w) => w.charAt(0))
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase();
                       return (
                         <div
                           key={session.id}
@@ -245,7 +250,7 @@ export default function TeacherDashboardPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-base font-bold text-on-surface">
-                                Confirmed Session
+                                {session.parent_display_name}
                               </span>
                               <span className="bg-tertiary-fixed text-on-tertiary-container text-xs font-bold px-2.5 py-0.5 rounded-full">
                                 Confirmed

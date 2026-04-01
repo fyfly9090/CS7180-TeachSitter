@@ -59,6 +59,8 @@ const CONFIRMED_BOOKING = {
   status: "confirmed",
   message: null,
   created_at: "2026-01-01T00:00:00Z",
+  parent_email: "mark.chen@example.com",
+  parent_display_name: "Mark Chen",
 };
 
 const PENDING_BOOKING = {
@@ -179,6 +181,13 @@ describe("TeacherDashboardPage — data display", () => {
       // Both stat cards should show "1" (1 confirmed + 1 pending)
       const statValues = screen.getAllByText("1").filter((el) => el.className.includes("text-4xl"));
       expect(statValues).toHaveLength(2);
+    });
+  });
+
+  test("renders confirmed session with parent name", async () => {
+    render(<TeacherDashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Mark Chen")).toBeInTheDocument();
     });
   });
 

@@ -145,16 +145,21 @@ describe("GET /api/teachers/me/bookings — data", () => {
     expect(body.pending).toEqual([]);
   });
 
-  test("returns confirmed bookings sorted by start_date", async () => {
+  test("returns confirmed bookings enriched with parent display name", async () => {
     mockSupabase(TEACHER_USER, [
       { data: { id: TEACHER_ROW_ID }, error: null },
       { data: [CONFIRMED_BOOKING], error: null },
     ]);
+    mockServiceClient([{ id: PARENT_UID, email: "patricia.johnson@example.com" }]);
     const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { confirmed: { id: string }[]; pending: unknown[] };
+    const body = (await res.json()) as {
+      confirmed: { id: string; parent_display_name: string }[];
+      pending: unknown[];
+    };
     expect(body.confirmed).toHaveLength(1);
     expect(body.confirmed[0].id).toBe("booking-1");
+    expect(body.confirmed[0].parent_display_name).toBe("Patricia Johnson");
     expect(body.pending).toEqual([]);
   });
 
