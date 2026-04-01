@@ -13,12 +13,14 @@ Fixed critical and medium issues identified during code review of the PATCH /api
 ### Changes
 
 **`app/api/bookings/[id]/route.ts`**
+
 - Added `availability.is_booked = true` side effect when booking is confirmed (prevents double-booking)
 - Added 409 CONFLICT guard for non-pending bookings (already confirmed/declined cannot be changed)
 - Cleaned up type assertions — replaced inline casts with `typedBooking`/`typedTeacher` locals
 - Added `start_date, end_date` to booking select for availability lookup
 
 **`__tests__/api-bookings.test.ts`**
+
 - Added test: 404 when teacher profile does not exist
 - Added test: 409 when booking is already confirmed
 - Added test: 409 when booking is already declined

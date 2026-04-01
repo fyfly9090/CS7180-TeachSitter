@@ -14,6 +14,7 @@ Issue number: $ARGUMENTS
 ## Step 1: Fetch the Issue
 
 Use the `mcp__github__get_issue` tool with:
+
 - `owner`: `fyfly9090`
 - `repo`: `CS7180-TeachSitter`
 - `issue_number`: $ARGUMENTS
@@ -39,6 +40,7 @@ After agents complete, **read every file they identify** to build full context.
 ## Step 3: Summarize Findings
 
 Present a concise summary:
+
 - What the issue is asking for
 - Which files/modules are affected
 - Existing patterns to follow

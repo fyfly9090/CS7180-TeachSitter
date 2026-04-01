@@ -345,9 +345,7 @@ describe("PATCH /api/bookings/[id] — business logic", () => {
   });
 
   test("returns 404 when teacher profile does not exist", async () => {
-    mockSupabase(TEACHER_USER, [
-      { data: null, error: { code: "PGRST116", message: "Not found" } },
-    ]);
+    mockSupabase(TEACHER_USER, [{ data: null, error: { code: "PGRST116", message: "Not found" } }]);
     const res = await PATCH(makePatchRequest(BOOKING_ID, { status: "confirmed" }), {
       params: Promise.resolve({ id: BOOKING_ID }),
     });
