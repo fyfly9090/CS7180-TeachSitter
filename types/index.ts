@@ -94,6 +94,12 @@ export type BookingResponse = Pick<
   "id" | "parent_id" | "teacher_id" | "start_date" | "end_date" | "status"
 >;
 
+// Booking enriched with parent info — used by GET /api/teachers/me/bookings
+export interface BookingWithParent extends Booking {
+  parent_email: string;
+  parent_display_name: string;
+}
+
 // Standard API error shape — matches docs/API.md error format
 export interface ApiError {
   error: {
