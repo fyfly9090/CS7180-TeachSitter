@@ -116,7 +116,7 @@ export const createBookingSchema = z
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 
 // =====================
-// Booking Status Update — PATCH /api/bookings/[id]
+// Booking Status Update — PATCH /api/bookings/[id] (teacher)
 // Only confirmed or declined are valid teacher actions.
 // =====================
 
@@ -124,6 +124,21 @@ export const updateBookingSchema = z.object({
   status: z.enum(["confirmed", "declined"]),
 });
 export type UpdateBookingInput = z.infer<typeof updateBookingSchema>;
+
+// =====================
+// Booking Dates Update — PATCH /api/bookings/[id] (parent)
+// Parent can modify dates + optional message, which resets status to pending.
+// message is capped at 500 chars: guards against prompt injection via booking message.
+// =====================
+
+export const updateBookingDatesSchema = z
+  .object({
+    start_date: dateString,
+    end_date: dateString,
+    message: z.string().max(500).optional(),
+  })
+  .superRefine(dateRangeRefinement);
+export type UpdateBookingDatesInput = z.infer<typeof updateBookingDatesSchema>;
 
 // =====================
 // Evals Query — GET /api/evals

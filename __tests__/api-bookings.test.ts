@@ -1,5 +1,5 @@
 // @vitest-environment node
-// TDD RED → GREEN: POST /api/bookings + PATCH /api/bookings/[id]
+// TDD RED → GREEN: POST /api/bookings + PATCH /api/bookings/[id] + GET /api/bookings
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
@@ -18,8 +18,8 @@ vi.mock("../lib/supabase/server", () => ({
 // ---------------------------------------------------------------------------
 
 import { createServerClient } from "../lib/supabase/server";
-import { POST } from "../app/api/bookings/route";
-import { PATCH } from "../app/api/bookings/[id]/route";
+import { GET, POST } from "../app/api/bookings/route";
+import { PATCH, DELETE } from "../app/api/bookings/[id]/route";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -71,7 +71,10 @@ type MockChain = {
   limit: ReturnType<typeof vi.fn>;
   insert: ReturnType<typeof vi.fn>;
   update: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
   maybeSingle: ReturnType<typeof vi.fn>;
+  order: ReturnType<typeof vi.fn>;
+  in: ReturnType<typeof vi.fn>;
 };
 
 /** Build a fluent Supabase chain mock.
@@ -87,7 +90,10 @@ function makeChain(finalResult: { data: unknown; error: unknown }): MockChain {
     limit: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue(finalResult),
+    order: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
   };
   // Make the chain itself awaitable (for queries that don't call .single())
   (chain as unknown as PromiseLike<unknown>).then = (
@@ -280,12 +286,13 @@ describe("PATCH /api/bookings/[id] — input validation", () => {
     expect(res.status).toBe(401);
   });
 
-  test("returns 403 when user is a parent (not teacher)", async () => {
+  test("returns 400 when parent sends status field instead of dates", async () => {
+    // Parents use a different PATCH branch (dates update). Sending status → invalid input.
     mockSupabase(PARENT_USER, []);
     const res = await PATCH(makePatchRequest("booking-uuid-1", { status: "confirmed" }), {
       params: Promise.resolve({ id: "booking-uuid-1" }),
     });
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(400);
   });
 
   test("returns 400 when status is invalid", async () => {
@@ -471,5 +478,272 @@ describe("PATCH /api/bookings/[id] — business logic", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.booking.status).toBe("declined");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/bookings
+// ---------------------------------------------------------------------------
+
+const BOOKING_WITH_TEACHER = {
+  id: BOOKING_ID,
+  parent_id: PARENT_UID,
+  teacher_id: TEACHER_ID,
+  start_date: "2026-06-16",
+  end_date: "2026-06-20",
+  status: "confirmed",
+  message: "Hi!",
+  created_at: "2026-03-26T00:00:00Z",
+  teachers: { full_name: "Ms. Tara Smith", classroom: "Sunflower" },
+};
+
+function makeGetRequest(): Request {
+  return new Request("http://localhost/api/bookings", { method: "GET" });
+}
+
+describe("GET /api/bookings — auth", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  test("returns 401 when unauthenticated", async () => {
+    mockSupabase(null, []);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(401);
+  });
+
+  test("returns 403 when user is a teacher", async () => {
+    mockSupabase(TEACHER_USER, []);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("GET /api/bookings — data", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  test("returns 200 with bookings array for authenticated parent", async () => {
+    mockSupabase(PARENT_USER, [{ data: [BOOKING_WITH_TEACHER], error: null }]);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.bookings)).toBe(true);
+    expect(body.bookings).toHaveLength(1);
+  });
+
+  test("flattens teacher_name from nested teachers join", async () => {
+    mockSupabase(PARENT_USER, [{ data: [BOOKING_WITH_TEACHER], error: null }]);
+    const res = await GET(makeGetRequest());
+    const body = await res.json();
+    expect(body.bookings[0].teacher_name).toBe("Ms. Tara Smith");
+  });
+
+  test("flattens teacher_classroom from nested teachers join", async () => {
+    mockSupabase(PARENT_USER, [{ data: [BOOKING_WITH_TEACHER], error: null }]);
+    const res = await GET(makeGetRequest());
+    const body = await res.json();
+    expect(body.bookings[0].teacher_classroom).toBe("Sunflower");
+  });
+
+  test("returns empty array when parent has no bookings", async () => {
+    mockSupabase(PARENT_USER, [{ data: [], error: null }]);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.bookings).toHaveLength(0);
+  });
+
+  test("returns 500 on database error", async () => {
+    mockSupabase(PARENT_USER, [{ data: null, error: { code: "PGRST000", message: "DB error" } }]);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(500);
+  });
+
+  test("includes start_time and end_time from availability when slot covers booking dates", async () => {
+    const availSlot = {
+      teacher_id: TEACHER_ID,
+      start_date: "2026-06-15",
+      end_date: "2026-06-30",
+      start_time: "08:00:00",
+      end_time: "17:00:00",
+    };
+    mockSupabase(PARENT_USER, [
+      { data: [BOOKING_WITH_TEACHER], error: null }, // bookings query
+      { data: [availSlot], error: null }, // availability batch query
+    ]);
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.bookings[0].start_time).toBe("08:00:00");
+    expect(body.bookings[0].end_time).toBe("17:00:00");
+  });
+
+  test("sets start_time and end_time to null when no availability slot matches", async () => {
+    mockSupabase(PARENT_USER, [
+      { data: [BOOKING_WITH_TEACHER], error: null },
+      { data: [], error: null },
+    ]);
+    const res = await GET(makeGetRequest());
+    const body = await res.json();
+    expect(body.bookings[0].start_time).toBeNull();
+    expect(body.bookings[0].end_time).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PATCH /api/bookings/[id] — parent modifies dates
+// ---------------------------------------------------------------------------
+
+function makeParentPatchRequest(id: string, body: object): Request {
+  return new Request(`http://localhost/api/bookings/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+const PARENT_BOOKING_ROW = { ...BOOKING_ROW, parent_id: PARENT_UID };
+
+describe("PATCH /api/bookings/[id] — parent modifies dates", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const VALID_DATES = { start_date: "2026-07-01", end_date: "2026-07-05" };
+
+  test("returns 400 when dates are missing", async () => {
+    mockSupabase(PARENT_USER, []);
+    const res = await PATCH(makeParentPatchRequest(BOOKING_ID, {}), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  test("returns 400 when end_date is before start_date", async () => {
+    mockSupabase(PARENT_USER, []);
+    const res = await PATCH(
+      makeParentPatchRequest(BOOKING_ID, { start_date: "2026-07-05", end_date: "2026-07-01" }),
+      { params: Promise.resolve({ id: BOOKING_ID }) }
+    );
+    expect(res.status).toBe(400);
+  });
+
+  test("returns 404 when booking not found", async () => {
+    mockSupabase(PARENT_USER, [{ data: null, error: { code: "PGRST116", message: "Not found" } }]);
+    const res = await PATCH(makeParentPatchRequest(BOOKING_ID, VALID_DATES), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(404);
+  });
+
+  test("returns 403 when booking belongs to a different parent", async () => {
+    mockSupabase(PARENT_USER, [
+      { data: { ...BOOKING_ROW, parent_id: "other-parent-uuid" }, error: null },
+    ]);
+    const res = await PATCH(makeParentPatchRequest(BOOKING_ID, VALID_DATES), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  test("returns 409 when teacher unavailable for new dates", async () => {
+    mockSupabase(PARENT_USER, [
+      { data: PARENT_BOOKING_ROW, error: null }, // booking lookup
+      { data: [], error: null }, // no availability
+    ]);
+    const res = await PATCH(makeParentPatchRequest(BOOKING_ID, VALID_DATES), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(409);
+  });
+
+  test("returns 200 with status pending after successful date update", async () => {
+    const updatedRow = { ...PARENT_BOOKING_ROW, ...VALID_DATES, status: "pending" };
+    mockSupabase(PARENT_USER, [
+      { data: PARENT_BOOKING_ROW, error: null }, // booking lookup
+      { data: [AVAILABILITY_ROW], error: null }, // availability check
+      { data: updatedRow, error: null }, // update
+    ]);
+    const res = await PATCH(makeParentPatchRequest(BOOKING_ID, VALID_DATES), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.booking.status).toBe("pending");
+    expect(body.booking.start_date).toBe("2026-07-01");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /api/bookings/[id] — parent cancels booking
+// ---------------------------------------------------------------------------
+
+function makeDeleteRequest(id: string): Request {
+  return new Request(`http://localhost/api/bookings/${id}`, { method: "DELETE" });
+}
+
+describe("DELETE /api/bookings/[id]", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  test("returns 401 when unauthenticated", async () => {
+    mockSupabase(null, []);
+    const res = await DELETE(makeDeleteRequest(BOOKING_ID), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  test("returns 403 when user is a teacher", async () => {
+    mockSupabase(TEACHER_USER, []);
+    const res = await DELETE(makeDeleteRequest(BOOKING_ID), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  test("returns 404 when booking not found", async () => {
+    mockSupabase(PARENT_USER, [{ data: null, error: { code: "PGRST116", message: "Not found" } }]);
+    const res = await DELETE(makeDeleteRequest(BOOKING_ID), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(404);
+  });
+
+  test("returns 403 when booking belongs to a different parent", async () => {
+    mockSupabase(PARENT_USER, [
+      { data: { id: BOOKING_ID, parent_id: "other-parent-uuid", status: "pending" }, error: null },
+    ]);
+    const res = await DELETE(makeDeleteRequest(BOOKING_ID), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  test("returns 409 when trying to cancel a non-pending booking", async () => {
+    mockSupabase(PARENT_USER, [
+      { data: { id: BOOKING_ID, parent_id: PARENT_UID, status: "confirmed" }, error: null },
+    ]);
+    const res = await DELETE(makeDeleteRequest(BOOKING_ID), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(409);
+  });
+
+  test("returns 204 on successful cancellation", async () => {
+    mockSupabase(PARENT_USER, [
+      { data: { id: BOOKING_ID, parent_id: PARENT_UID, status: "pending" }, error: null }, // lookup
+      { data: null, error: null }, // delete
+    ]);
+    const res = await DELETE(makeDeleteRequest(BOOKING_ID), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(204);
+  });
+
+  test("returns 500 on Supabase delete error", async () => {
+    mockSupabase(PARENT_USER, [
+      { data: { id: BOOKING_ID, parent_id: PARENT_UID, status: "pending" }, error: null },
+      { data: null, error: { code: "PGRST000", message: "DB error" } },
+    ]);
+    const res = await DELETE(makeDeleteRequest(BOOKING_ID), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(500);
   });
 });
