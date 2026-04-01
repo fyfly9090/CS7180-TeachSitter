@@ -11,6 +11,11 @@ interface ChildData {
   name: string;
   classroom: string;
   age: number;
+  notes?: string;
+}
+
+function formatAge(age: number): string {
+  return age === 1 ? "1 Year Old" : `${age} Years Old`;
 }
 
 // ── Navbar ─────────────────────────────────────────────────────────────────────
@@ -108,6 +113,7 @@ function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [classroom, setClassroom] = useState("");
+  const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -119,7 +125,12 @@ function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
       const res = await fetch("/api/children", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), classroom: classroom.trim(), age: Number(age) }),
+        body: JSON.stringify({
+          name: name.trim(),
+          classroom: classroom.trim(),
+          age: Number(age),
+          notes: notes.trim(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -194,6 +205,23 @@ function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
               onChange={(e) => setClassroom(e.target.value)}
               placeholder="e.g. Sunflower"
               className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="child-notes"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Notes
+            </label>
+            <textarea
+              id="child-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Allergies, nap schedule, special needs…"
+              rows={3}
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
             />
           </div>
         </div>
@@ -310,25 +338,49 @@ export default function ProfilePage() {
                 {children.map((child) => (
                   <div
                     key={child.id}
-                    className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm relative"
+                    className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm"
                   >
-                    <button
-                      onClick={() => handleDeleteChild(child.id)}
-                      aria-label={`Delete ${child.name}`}
-                      className="absolute top-3 right-3 p-1.5 rounded-full text-on-surface-variant hover:bg-error-container hover:text-error transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">delete</span>
-                    </button>
-                    <div className="w-14 h-14 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl mb-3">
-                      {child.name.charAt(0).toUpperCase()}
+                    {/* Avatar + name/age + delete */}
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-2xl flex-shrink-0">
+                        {child.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-on-surface text-lg leading-tight">
+                          {child.name}
+                        </p>
+                        <p className="text-sm text-on-surface-variant mt-0.5">
+                          {formatAge(child.age)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteChild(child.id)}
+                        aria-label={`Delete ${child.name}`}
+                        className="p-1.5 rounded-full text-on-surface-variant hover:bg-error-container hover:text-error transition-all flex-shrink-0"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
                     </div>
-                    <p className="font-bold text-on-surface">{child.name}</p>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-tertiary-fixed rounded-full text-xs font-bold text-on-tertiary-container mt-1.5">
-                      <span className="material-symbols-outlined text-[12px]">school</span>
-                      {child.classroom}
-                    </span>
-                    <p className="text-sm text-on-surface-variant mt-1.5">Age {child.age}</p>
-                    <button className="text-xs text-primary font-semibold mt-2 hover:opacity-80 transition-opacity block">
+
+                    {/* Classroom */}
+                    <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+                      <span className="material-symbols-outlined text-primary text-[18px]">
+                        door_open
+                      </span>
+                      <span>{child.classroom}</span>
+                    </div>
+
+                    {/* Notes */}
+                    {child.notes && (
+                      <div className="flex items-start gap-2 text-sm text-on-surface-variant mt-2">
+                        <span className="material-symbols-outlined text-error text-[18px] flex-shrink-0 mt-0.5">
+                          medical_services
+                        </span>
+                        <span>{child.notes}</span>
+                      </div>
+                    )}
+
+                    <button className="text-xs text-primary font-semibold mt-3 hover:opacity-80 transition-opacity block">
                       Edit
                     </button>
                   </div>

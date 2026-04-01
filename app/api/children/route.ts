@@ -17,7 +17,7 @@ export const GET = withApiHandler(async () => {
 
   const { data, error } = await supabase
     .from("children")
-    .select("id, name, classroom, age, created_at")
+    .select("id, name, classroom, age, notes, created_at")
     .eq("parent_id", user.id)
     .order("created_at", { ascending: true });
 
@@ -45,8 +45,9 @@ export const POST = withApiHandler(async (req: Request) => {
       name: input.name,
       classroom: input.classroom,
       age: input.age,
+      notes: input.notes,
     })
-    .select("id, name, classroom, age, created_at")
+    .select("id, name, classroom, age, notes, created_at")
     .single();
 
   if (error) throw errors.internal();

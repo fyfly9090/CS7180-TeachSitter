@@ -147,6 +147,7 @@ export const createChildSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   classroom: z.string().min(1, "Classroom is required").max(100),
   age: z.coerce.number().int().min(1, "Age must be at least 1").max(10, "Age must be at most 10"),
+  notes: z.string().max(500).optional().default(""),
 });
 export type CreateChildInput = z.infer<typeof createChildSchema>;
 

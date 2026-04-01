@@ -30,8 +30,8 @@ vi.mock("next/link", () => ({
 // ── Fixtures ───────────────────────────────────────────────────────────────────
 
 const CHILDREN = [
-  { id: "c1", name: "Lily", classroom: "Sunflower", age: 4, created_at: "2026-01-01" },
-  { id: "c2", name: "Oliver", classroom: "Butterfly", age: 3, created_at: "2026-01-02" },
+  { id: "c1", name: "Lily", classroom: "Sunflower", age: 4, notes: "", created_at: "2026-01-01" },
+  { id: "c2", name: "Oliver", classroom: "Butterfly", age: 3, notes: "", created_at: "2026-01-02" },
 ];
 
 function mockFetchChildren(children = CHILDREN) {
@@ -127,7 +127,7 @@ describe("ProfilePage — children from API", () => {
     mockFetchChildren();
     render(<ProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText(/age 4/i)).toBeInTheDocument();
+      expect(screen.getByText(/4 years old/i)).toBeInTheDocument();
     });
   });
 
@@ -135,7 +135,7 @@ describe("ProfilePage — children from API", () => {
     mockFetchChildren();
     render(<ProfilePage />);
     await waitFor(() => {
-      expect(screen.getByText(/age 3/i)).toBeInTheDocument();
+      expect(screen.getByText(/3 years old/i)).toBeInTheDocument();
     });
   });
 
@@ -240,6 +240,12 @@ describe("ProfilePage — Add a Child modal", () => {
     expect(screen.getByLabelText(/classroom/i)).toBeInTheDocument();
   });
 
+  it("modal contains a notes field", () => {
+    render(<ProfilePage />);
+    fireEvent.click(screen.getByRole("button", { name: /add a child/i }));
+    expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
+  });
+
   it("closes modal when Cancel is clicked", () => {
     render(<ProfilePage />);
     fireEvent.click(screen.getByRole("button", { name: /add a child/i }));
@@ -253,6 +259,7 @@ describe("ProfilePage — Add a Child modal", () => {
       name: "Emma",
       classroom: "Rainbow",
       age: 2,
+      notes: "",
       created_at: "2026-01-03",
     };
     (global.fetch as ReturnType<typeof vi.fn>)
@@ -285,6 +292,7 @@ describe("ProfilePage — Add a Child modal", () => {
       name: "Emma",
       classroom: "Rainbow",
       age: 2,
+      notes: "",
       created_at: "2026-01-03",
     };
     (global.fetch as ReturnType<typeof vi.fn>)

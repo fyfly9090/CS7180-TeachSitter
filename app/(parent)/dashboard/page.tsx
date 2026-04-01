@@ -11,6 +11,34 @@ interface ChildData {
   name: string;
   classroom: string;
   age: number;
+  notes?: string;
+}
+
+interface BookingData {
+  id: string;
+  teacher_name: string | null;
+  teacher_classroom: string | null;
+  start_date: string;
+  end_date: string;
+  start_time: string | null;
+  status: string;
+  created_at: string;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function formatAge(age: number): string {
+  return age === 1 ? "1 Year Old" : `${age} Years Old`;
+}
+
+function formatRelative(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const hours = Math.floor(diffMs / 3600000);
+  if (hours < 1) return "Just now";
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "Yesterday";
+  return `${days} days ago`;
 }
 
 // ── Navbar ─────────────────────────────────────────────────────────────────────
@@ -108,6 +136,7 @@ function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [classroom, setClassroom] = useState("");
+  const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -119,7 +148,12 @@ function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
       const res = await fetch("/api/children", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), classroom: classroom.trim(), age: Number(age) }),
+        body: JSON.stringify({
+          name: name.trim(),
+          classroom: classroom.trim(),
+          age: Number(age),
+          notes: notes.trim(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -196,6 +230,23 @@ function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
               className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="child-notes"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Notes
+            </label>
+            <textarea
+              id="child-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Allergies, nap schedule, special needs…"
+              rows={3}
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+            />
+          </div>
         </div>
 
         {error && <p className="text-xs text-error mt-3">{error}</p>}
@@ -247,13 +298,22 @@ export default function DashboardPage() {
   const [classroom, setClassroom] = useState("All Classrooms");
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [children, setChildren] = useState<ChildData[]>([]);
+  const [bookings, setBookings] = useState<BookingData[]>([]);
 
-  // Load children from API on mount
   useEffect(() => {
     fetch("/api/children")
       .then((r) => r.json())
       .then((data) => {
         if (data.children) setChildren(data.children);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/bookings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.bookings) setBookings(data.bookings);
       })
       .catch(() => {});
   }, []);
@@ -376,24 +436,101 @@ export default function DashboardPage() {
                     {children.map((child) => (
                       <div
                         key={child.id}
-                        className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm relative"
+                        className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm"
                       >
-                        <button
-                          onClick={() => handleDeleteChild(child.id)}
-                          aria-label={`Delete ${child.name}`}
-                          className="absolute top-3 right-3 p-1.5 rounded-full text-on-surface-variant hover:bg-error-container hover:text-error transition-all"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">delete</span>
-                        </button>
-                        <div className="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-2xl mb-3">
-                          {child.name.charAt(0).toUpperCase()}
+                        {/* Avatar + name/age + delete */}
+                        <div className="flex items-start gap-3 mb-4">
+                          <div className="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-2xl flex-shrink-0">
+                            {child.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-on-surface text-lg leading-tight">
+                              {child.name}
+                            </p>
+                            <p className="text-sm text-on-surface-variant mt-0.5">
+                              {formatAge(child.age)}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteChild(child.id)}
+                            aria-label={`Delete ${child.name}`}
+                            className="p-1.5 rounded-full text-on-surface-variant hover:bg-error-container hover:text-error transition-all flex-shrink-0"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
                         </div>
-                        <p className="text-lg font-bold text-on-surface">{child.name}</p>
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-tertiary-fixed rounded-full text-xs font-bold text-on-tertiary-container mt-1.5">
-                          <span className="material-symbols-outlined text-[12px]">school</span>
-                          {child.classroom}
-                        </span>
-                        <p className="text-sm text-on-surface-variant mt-1.5">Age {child.age}</p>
+
+                        {/* Classroom */}
+                        <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+                          <span className="material-symbols-outlined text-primary text-[18px]">
+                            door_open
+                          </span>
+                          <span>{child.classroom}</span>
+                        </div>
+
+                        {/* Notes */}
+                        {child.notes && (
+                          <div className="flex items-start gap-2 text-sm text-on-surface-variant mt-2">
+                            <span className="material-symbols-outlined text-error text-[18px] flex-shrink-0 mt-0.5">
+                              medical_services
+                            </span>
+                            <span>{child.notes}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Active Requests section */}
+              <div className="mt-10">
+                <h2 className="text-xl font-bold text-on-surface mb-4">Active Requests</h2>
+                {bookings.length === 0 ? (
+                  <p className="text-sm text-on-surface-variant">No active requests.</p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {bookings.map((booking) => (
+                      <div
+                        key={booking.id}
+                        className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 shadow-sm flex items-center gap-4"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center flex-shrink-0">
+                          <span className="material-symbols-outlined text-on-surface-variant text-[20px]">
+                            {booking.status === "confirmed"
+                              ? "check_circle"
+                              : booking.status === "declined"
+                                ? "cancel"
+                                : "schedule"}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-on-surface text-sm">
+                            {booking.teacher_name
+                              ? `Care with ${booking.teacher_name}`
+                              : "Booking Request"}
+                          </p>
+                          <p className="text-xs text-on-surface-variant mt-0.5">
+                            {booking.start_date}
+                            {booking.start_time ? ` · ${booking.start_time.slice(0, 5)}` : ""}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
+                              booking.status === "confirmed"
+                                ? "bg-tertiary text-on-tertiary"
+                                : booking.status === "declined"
+                                  ? "bg-error text-on-error"
+                                  : "bg-secondary text-on-secondary"
+                            }`}
+                          >
+                            {booking.status}
+                          </span>
+                          <p className="text-xs text-on-surface-variant mt-1">
+                            {formatRelative(booking.created_at)}
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
