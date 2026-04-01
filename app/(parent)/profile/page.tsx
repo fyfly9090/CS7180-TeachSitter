@@ -84,6 +84,82 @@ function MobileBottomNav() {
   );
 }
 
+function AddChildModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Add a Child"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+    >
+      <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm shadow-xl border border-outline-variant/20">
+        <h2 className="text-lg font-bold text-on-surface mb-5">Add a Child</h2>
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="child-name"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Name
+            </label>
+            <input
+              id="child-name"
+              type="text"
+              placeholder="Child's name"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="child-age"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Age
+            </label>
+            <input
+              id="child-age"
+              type="number"
+              min={1}
+              max={12}
+              placeholder="Age"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="child-classroom"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Classroom
+            </label>
+            <input
+              id="child-classroom"
+              type="text"
+              placeholder="e.g. Sunflower"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 border border-outline-variant/40 text-on-surface-variant px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-surface-container transition-all"
+          >
+            Cancel
+          </button>
+          <button className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary px-4 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all">
+            Add Child
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface Child {
   name: string;
   initials: string;
@@ -99,8 +175,24 @@ const children: Child[] = [
 export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [showAddChildModal, setShowAddChildModal] = useState(false);
 
   const handleSaveChanges = () => {
+    // Validate only when at least one password field is filled
+    if (!newPassword && !currentPassword) return;
+
+    if (newPassword.length > 0 && newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters");
+      return;
+    }
+
+    if (newPassword && !currentPassword) {
+      setPasswordError("Current password is required");
+      return;
+    }
+
+    setPasswordError(null);
     // In production this would call /api/auth/update-password
   };
 
@@ -165,7 +257,10 @@ export default function ProfilePage() {
               </div>
 
               {/* Add a Child button */}
-              <button className="mt-4 w-full border-2 border-dashed border-outline-variant/40 rounded-2xl py-5 text-primary font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary-fixed/20 transition-all">
+              <button
+                onClick={() => setShowAddChildModal(true)}
+                className="mt-4 w-full border-2 border-dashed border-outline-variant/40 rounded-2xl py-5 text-primary font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary-fixed/20 transition-all"
+              >
                 <span className="material-symbols-outlined text-[20px]">add_circle</span>
                 Add a Child
               </button>
@@ -178,10 +273,14 @@ export default function ProfilePage() {
 
                 {/* Email display */}
                 <div className="flex flex-col gap-1.5 mb-4">
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                  <label
+                    htmlFor="profile-email"
+                    className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+                  >
                     Email
                   </label>
                   <input
+                    id="profile-email"
                     type="email"
                     value="patricia@example.com"
                     disabled
@@ -195,8 +294,11 @@ export default function ProfilePage() {
                     Change Password
                   </p>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-on-surface-variant">Current Password</label>
+                    <label htmlFor="current-password" className="text-xs text-on-surface-variant">
+                      Current Password
+                    </label>
                     <input
+                      id="current-password"
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
@@ -205,8 +307,11 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-on-surface-variant">New Password</label>
+                    <label htmlFor="new-password" className="text-xs text-on-surface-variant">
+                      New Password
+                    </label>
                     <input
+                      id="new-password"
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
@@ -214,6 +319,7 @@ export default function ProfilePage() {
                       className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
+                  {passwordError && <p className="text-xs text-error">{passwordError}</p>}
                 </div>
 
                 <button
@@ -227,7 +333,10 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
       <MobileBottomNav />
+
+      {showAddChildModal && <AddChildModal onClose={() => setShowAddChildModal(false)} />}
     </>
   );
 }

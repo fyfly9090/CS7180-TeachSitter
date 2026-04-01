@@ -84,6 +84,82 @@ function MobileBottomNav() {
   );
 }
 
+function AddChildModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Add a Child"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+    >
+      <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm shadow-xl border border-outline-variant/20">
+        <h2 className="text-lg font-bold text-on-surface mb-5">Add a Child</h2>
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="child-name"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Name
+            </label>
+            <input
+              id="child-name"
+              type="text"
+              placeholder="Child's name"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="child-age"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Age
+            </label>
+            <input
+              id="child-age"
+              type="number"
+              min={1}
+              max={12}
+              placeholder="Age"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="child-classroom"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Classroom
+            </label>
+            <input
+              id="child-classroom"
+              type="text"
+              placeholder="e.g. Sunflower"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 border border-outline-variant/40 text-on-surface-variant px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-surface-container transition-all"
+          >
+            Cancel
+          </button>
+          <button className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary px-4 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all">
+            Add Child
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const aiSuggestions = [
   {
     initials: "TS",
@@ -109,6 +185,7 @@ export default function DashboardPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [classroom, setClassroom] = useState("All Classrooms");
+  const [showAddChildModal, setShowAddChildModal] = useState(false);
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -142,10 +219,14 @@ export default function DashboardPage() {
                 </p>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                    <label
+                      htmlFor="search-date-from"
+                      className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+                    >
                       Date From
                     </label>
                     <input
+                      id="search-date-from"
                       type="date"
                       value={dateFrom}
                       onChange={(e) => setDateFrom(e.target.value)}
@@ -153,10 +234,14 @@ export default function DashboardPage() {
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                    <label
+                      htmlFor="search-date-to"
+                      className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+                    >
                       Date To
                     </label>
                     <input
+                      id="search-date-to"
                       type="date"
                       value={dateTo}
                       onChange={(e) => setDateTo(e.target.value)}
@@ -194,7 +279,10 @@ export default function DashboardPage() {
               <div className="mt-10">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-on-surface">My Children</h2>
-                  <button className="text-primary text-sm font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity">
+                  <button
+                    onClick={() => setShowAddChildModal(true)}
+                    className="text-primary text-sm font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity"
+                  >
                     <span className="material-symbols-outlined text-[18px]">add_circle</span>
                     Add Child
                   </button>
@@ -266,7 +354,10 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
       <MobileBottomNav />
+
+      {showAddChildModal && <AddChildModal onClose={() => setShowAddChildModal(false)} />}
     </>
   );
 }
