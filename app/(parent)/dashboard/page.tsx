@@ -276,16 +276,20 @@ function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
 
 const aiSuggestions = [
   {
-    initials: "TS",
-    name: "Ms. Tara Smith",
-    rank: "#1 Match",
-    reasoning: "Same classroom as Lily — highest familiarity.",
+    initials: "CH",
+    shortName: "Ms. Clara",
+    name: "Ms. Clara H.",
+    role: "Sunshine Room Lead",
+    reasoning:
+      "Ms. Clara is Leo's primary teacher. She's already familiar with his afternoon routine and specific snack requirements.",
   },
   {
-    initials: "RC",
-    name: "Ms. Rachel Chen",
-    rank: "#2 Match",
-    reasoning: "Strong availability overlap with your requested dates.",
+    initials: "EV",
+    shortName: "Ms. Elena",
+    name: "Ms. Elena V.",
+    role: "Little Sprouts Asst.",
+    reasoning:
+      "Maya responds exceptionally well to Elena during morning play. Elena is certified in infant CPR and first aid.",
   },
 ];
 
@@ -538,47 +542,74 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Sidebar: AI Match */}
+            {/* Sidebar: Quick Match AI */}
             <div className="lg:col-span-1 mt-10 lg:mt-0">
               <div className="sticky top-24 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm">
-                <div className="flex items-center justify-between mb-1">
-                  <h2 className="text-base font-bold text-on-surface">AI Match</h2>
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-3">
                   <span
-                    className="material-symbols-outlined text-secondary text-[20px]"
+                    className="material-symbols-outlined text-primary text-[22px]"
                     style={{ fontVariationSettings: "'FILL' 1" }}
                   >
                     auto_awesome
                   </span>
+                  <h2 className="text-lg font-bold text-on-surface">Quick Match AI</h2>
                 </div>
-                <p className="text-xs text-on-surface-variant mb-4">For Lily · Jun 16–20</p>
+                <p className="text-sm text-on-surface-variant mb-5">
+                  We&apos;ve analyzed your children&apos;s school schedules and classroom teachers
+                  to find the perfect matches available this weekend.
+                </p>
 
                 <div className="flex flex-col gap-4">
                   {aiSuggestions.map((teacher) => (
-                    <div key={teacher.name} className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                        {teacher.initials}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-bold text-on-surface">{teacher.name}</p>
-                          <span className="bg-secondary-fixed text-secondary text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
-                            {teacher.rank}
-                          </span>
+                    <div
+                      key={teacher.name}
+                      className="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10"
+                    >
+                      {/* Teacher header */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-14 h-14 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
+                          {teacher.initials}
                         </div>
-                        <p className="italic text-xs text-on-surface-variant border-l-2 border-secondary-container pl-2 mt-1.5">
-                          {teacher.reasoning}
-                        </p>
+                        <div className="min-w-0">
+                          <p className="font-bold text-on-surface">{teacher.name}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span
+                              className="material-symbols-outlined text-tertiary text-[14px]"
+                              style={{ fontVariationSettings: "'FILL' 1" }}
+                            >
+                              verified
+                            </span>
+                            <span className="text-xs text-tertiary font-medium">
+                              {teacher.role}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Reasoning quote */}
+                      <p className="text-xs text-on-surface-variant italic bg-surface-container rounded-xl p-3 mb-3">
+                        &ldquo;{teacher.reasoning}&rdquo;
+                      </p>
+
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => router.push("/search")}
+                          className="w-full bg-on-surface text-surface py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all"
+                        >
+                          Request {teacher.shortName}
+                        </button>
+                        <button
+                          onClick={() => router.push("/search")}
+                          className="w-full border border-primary text-primary py-2.5 rounded-xl text-sm font-bold hover:bg-primary-fixed/20 transition-all"
+                        >
+                          View Profile
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
-
-                <button
-                  onClick={() => router.push("/search")}
-                  className="w-full mt-4 border border-primary text-primary rounded-xl py-2.5 text-sm font-bold hover:bg-primary-fixed/30 transition-all"
-                >
-                  View All Matches
-                </button>
               </div>
             </div>
           </div>

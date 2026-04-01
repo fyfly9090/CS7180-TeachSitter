@@ -92,9 +92,9 @@ describe("DashboardPage — structure", () => {
     expect(screen.getByRole("heading", { name: /my children/i })).toBeInTheDocument();
   });
 
-  it("renders AI Match sidebar heading", () => {
+  it("renders Quick Match AI sidebar heading", () => {
     render(<DashboardPage />);
-    expect(screen.getByRole("heading", { name: /ai match/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /quick match ai/i })).toBeInTheDocument();
   });
 
   it("renders TeachSitter brand link", () => {
@@ -416,22 +416,34 @@ describe("DashboardPage — Add a Child modal", () => {
   });
 });
 
-describe("DashboardPage — AI Match sidebar", () => {
+describe("DashboardPage — Quick Match AI sidebar", () => {
   beforeEach(() => {
     global.fetch = vi.fn();
     mockFetchChildren();
   });
   afterEach(() => vi.clearAllMocks());
 
-  it("shows top 2 AI matches", () => {
+  it("renders Quick Match AI heading", () => {
     render(<DashboardPage />);
-    expect(screen.getByText(/#1 Match/i)).toBeInTheDocument();
-    expect(screen.getByText(/#2 Match/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /quick match ai/i })).toBeInTheDocument();
   });
 
-  it("shows View All Matches button", () => {
+  it("shows teacher names in sidebar", () => {
     render(<DashboardPage />);
-    expect(screen.getByRole("button", { name: /view all matches/i })).toBeInTheDocument();
+    expect(screen.getByText("Ms. Clara H.")).toBeInTheDocument();
+    expect(screen.getByText("Ms. Elena V.")).toBeInTheDocument();
+  });
+
+  it("shows Request buttons for each match", () => {
+    render(<DashboardPage />);
+    expect(screen.getByRole("button", { name: /request ms\. clara/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /request ms\. elena/i })).toBeInTheDocument();
+  });
+
+  it("shows View Profile buttons for each match", () => {
+    render(<DashboardPage />);
+    const viewProfileBtns = screen.getAllByRole("button", { name: /view profile/i });
+    expect(viewProfileBtns.length).toBe(2);
   });
 });
 
