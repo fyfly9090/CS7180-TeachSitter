@@ -140,6 +140,17 @@ export const updateBookingDatesSchema = z
 export type UpdateBookingDatesInput = z.infer<typeof updateBookingDatesSchema>;
 
 // =====================
+// Children — POST /api/children
+// =====================
+
+export const createChildSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  classroom: z.string().min(1, "Classroom is required").max(100),
+  age: z.coerce.number().int().min(1, "Age must be at least 1").max(10, "Age must be at most 10"),
+});
+export type CreateChildInput = z.infer<typeof createChildSchema>;
+
+// =====================
 // Evals Query — GET /api/evals
 // z.coerce.number() converts URL string params to numbers before validation.
 // =====================

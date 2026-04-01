@@ -1,8 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+interface ChildData {
+  id: string;
+  name: string;
+  classroom: string;
+  age: number;
+}
+
+// ── Navbar ─────────────────────────────────────────────────────────────────────
 
 function Navbar() {
   const pathname = usePathname();
@@ -50,6 +61,8 @@ function Navbar() {
   );
 }
 
+// ── MobileBottomNav ────────────────────────────────────────────────────────────
+
 function MobileBottomNav() {
   const pathname = usePathname();
 
@@ -84,7 +97,42 @@ function MobileBottomNav() {
   );
 }
 
-function AddChildModal({ onClose }: { onClose: () => void }) {
+// ── AddChildModal ──────────────────────────────────────────────────────────────
+
+interface AddChildModalProps {
+  onClose: () => void;
+  onAdd: (child: ChildData) => void;
+}
+
+function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [classroom, setClassroom] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !classroom.trim() || !age) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/children", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), classroom: classroom.trim(), age: Number(age) }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error?.message ?? "Failed to add child");
+        return;
+      }
+      onAdd(data.child);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div
       role="dialog"
@@ -106,6 +154,8 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
             <input
               id="child-name"
               type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Child's name"
               className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
@@ -122,8 +172,10 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
               id="child-age"
               type="number"
               min={1}
-              max={12}
-              placeholder="Age"
+              max={10}
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder="Age (1–10)"
               className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -138,21 +190,30 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
             <input
               id="child-classroom"
               type="text"
+              value={classroom}
+              onChange={(e) => setClassroom(e.target.value)}
               placeholder="e.g. Sunflower"
               className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
         </div>
 
+        {error && <p className="text-xs text-error mt-3">{error}</p>}
+
         <div className="mt-6 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 border border-outline-variant/40 text-on-surface-variant px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-surface-container transition-all"
+            disabled={submitting}
+            className="flex-1 border border-outline-variant/40 text-on-surface-variant px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-surface-container transition-all disabled:opacity-50"
           >
             Cancel
           </button>
-          <button className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary px-4 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all">
-            Add Child
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary px-4 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {submitting ? "Adding…" : "Add Child"}
           </button>
         </div>
       </div>
@@ -160,26 +221,37 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-interface Child {
-  name: string;
-  initials: string;
-  classroom: string;
-  age: number;
-}
-
-const children: Child[] = [
-  { name: "Lily", initials: "L", classroom: "Sunflower", age: 4 },
-  { name: "Oliver", initials: "O", classroom: "Butterfly", age: 3 },
-];
+// ── ProfilePage ────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
+  const [children, setChildren] = useState<ChildData[]>([]);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
 
+  // Load children from API on mount
+  useEffect(() => {
+    fetch("/api/children")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.children) setChildren(data.children);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleDeleteChild = async (id: string) => {
+    const res = await fetch(`/api/children/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setChildren((prev) => prev.filter((c) => c.id !== id));
+    }
+  };
+
+  const handleChildAdded = (child: ChildData) => {
+    setChildren((prev) => [...prev, child]);
+  };
+
   const handleSaveChanges = () => {
-    // Validate only when at least one password field is filled
     if (!newPassword && !currentPassword) return;
 
     if (newPassword.length > 0 && newPassword.length < 8) {
@@ -237,11 +309,18 @@ export default function ProfilePage() {
               <div className="grid grid-cols-2 gap-4">
                 {children.map((child) => (
                   <div
-                    key={child.name}
-                    className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm"
+                    key={child.id}
+                    className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm relative"
                   >
+                    <button
+                      onClick={() => handleDeleteChild(child.id)}
+                      aria-label={`Delete ${child.name}`}
+                      className="absolute top-3 right-3 p-1.5 rounded-full text-on-surface-variant hover:bg-error-container hover:text-error transition-all"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                    </button>
                     <div className="w-14 h-14 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl mb-3">
-                      {child.initials}
+                      {child.name.charAt(0).toUpperCase()}
                     </div>
                     <p className="font-bold text-on-surface">{child.name}</p>
                     <span className="inline-flex items-center gap-1 px-3 py-1 bg-tertiary-fixed rounded-full text-xs font-bold text-on-tertiary-container mt-1.5">
@@ -336,7 +415,9 @@ export default function ProfilePage() {
 
       <MobileBottomNav />
 
-      {showAddChildModal && <AddChildModal onClose={() => setShowAddChildModal(false)} />}
+      {showAddChildModal && (
+        <AddChildModal onClose={() => setShowAddChildModal(false)} onAdd={handleChildAdded} />
+      )}
     </>
   );
 }

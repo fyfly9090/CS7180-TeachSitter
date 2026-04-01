@@ -1,6 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import DashboardPage from "./page";
 
@@ -29,9 +29,34 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+// ── Fixtures ───────────────────────────────────────────────────────────────────
+
+const CHILDREN = [
+  { id: "c1", name: "Lily", classroom: "Sunflower", age: 4, created_at: "2026-01-01" },
+  { id: "c2", name: "Oliver", classroom: "Butterfly", age: 3, created_at: "2026-01-02" },
+];
+
+function mockFetchChildren(children = CHILDREN) {
+  (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ children }),
+  });
+}
+
+function mockFetchError() {
+  (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+    ok: false,
+    json: () => Promise.resolve({ error: { code: "INTERNAL_ERROR", message: "Server error" } }),
+  });
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe("DashboardPage — structure", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+    mockFetchChildren();
+  });
   afterEach(() => vi.clearAllMocks());
 
   it("renders welcome heading", () => {
@@ -56,6 +81,10 @@ describe("DashboardPage — structure", () => {
 });
 
 describe("DashboardPage — search card", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+    mockFetchChildren();
+  });
   afterEach(() => vi.clearAllMocks());
 
   it("renders date from input", () => {
@@ -113,48 +142,116 @@ describe("DashboardPage — search card", () => {
 
   it("does not include classroom param when 'All Classrooms' selected", () => {
     render(<DashboardPage />);
-    // default is All Classrooms
     fireEvent.click(screen.getByRole("button", { name: /search teachers/i }));
     expect(mockPush).not.toHaveBeenCalledWith(expect.stringContaining("classroom="));
   });
 });
 
-describe("DashboardPage — children cards", () => {
+describe("DashboardPage — children from API", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
   afterEach(() => vi.clearAllMocks());
 
-  it("shows child name Lily", () => {
+  it("calls GET /api/children on mount", async () => {
+    mockFetchChildren();
     render(<DashboardPage />);
-    expect(screen.getByText("Lily")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith("/api/children");
+    });
   });
 
-  it("shows child name Oliver", () => {
+  it("shows children loaded from API", async () => {
+    mockFetchChildren();
     render(<DashboardPage />);
-    expect(screen.getByText("Oliver")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Lily")).toBeInTheDocument();
+      expect(screen.getByText("Oliver")).toBeInTheDocument();
+    });
   });
 
-  it("shows Lily's classroom badge", () => {
+  it("shows child classroom badge from API", async () => {
+    mockFetchChildren();
     render(<DashboardPage />);
-    // Multiple "Sunflower" elements exist (select option + badge) — assert at least one
-    expect(screen.getAllByText("Sunflower").length).toBeGreaterThanOrEqual(1);
+    await waitFor(() => {
+      expect(screen.getAllByText("Sunflower").length).toBeGreaterThanOrEqual(1);
+    });
   });
 
-  it("shows Oliver's classroom badge", () => {
+  it("shows child age from API", async () => {
+    mockFetchChildren();
     render(<DashboardPage />);
-    expect(screen.getAllByText("Butterfly").length).toBeGreaterThanOrEqual(1);
+    await waitFor(() => {
+      expect(screen.getByText(/age 4/i)).toBeInTheDocument();
+    });
   });
 
-  it("shows Lily's age", () => {
+  it("shows empty state when API returns no children", async () => {
+    mockFetchChildren([]);
     render(<DashboardPage />);
-    expect(screen.getByText(/age 4/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/no children added yet/i)).toBeInTheDocument();
+    });
+  });
+});
+
+describe("DashboardPage — delete child", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+  afterEach(() => vi.clearAllMocks());
+
+  it("shows a delete button on each child card", async () => {
+    mockFetchChildren();
+    render(<DashboardPage />);
+    await waitFor(() => {
+      const deleteBtns = screen.getAllByRole("button", { name: /delete/i });
+      expect(deleteBtns.length).toBe(2);
+    });
   });
 
-  it("shows Oliver's age", () => {
+  it("calls DELETE /api/children/:id when delete clicked", async () => {
+    mockFetchChildren();
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: CHILDREN }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) }); // DELETE response
+
     render(<DashboardPage />);
-    expect(screen.getByText(/age 3/i)).toBeInTheDocument();
+    await waitFor(() => screen.getAllByRole("button", { name: /delete/i }));
+
+    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/children/c1",
+        expect.objectContaining({ method: "DELETE" })
+      );
+    });
+  });
+
+  it("removes child from list after successful delete", async () => {
+    mockFetchChildren();
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: CHILDREN }) })
+      .mockResolvedValueOnce({ ok: true, status: 204, json: () => Promise.resolve({}) });
+
+    render(<DashboardPage />);
+    await waitFor(() => screen.getAllByRole("button", { name: /delete/i }));
+
+    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Lily")).not.toBeInTheDocument();
+      expect(screen.getByText("Oliver")).toBeInTheDocument();
+    });
   });
 });
 
 describe("DashboardPage — Add a Child modal", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+    mockFetchChildren([]);
+  });
   afterEach(() => vi.clearAllMocks());
 
   it("shows an Add Child button", () => {
@@ -197,9 +294,77 @@ describe("DashboardPage — Add a Child modal", () => {
     fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("calls POST /api/children when Add Child form submitted", async () => {
+    const newChild = {
+      id: "c3",
+      name: "Emma",
+      classroom: "Rainbow",
+      age: 2,
+      created_at: "2026-01-03",
+    };
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: [] }) }) // initial load
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ child: newChild }) }); // POST
+
+    render(<DashboardPage />);
+    fireEvent.click(screen.getByRole("button", { name: /add child/i }));
+
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Emma" } });
+    fireEvent.change(screen.getByLabelText(/age/i), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText(/classroom/i), { target: { value: "Rainbow" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /^add child$/i }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/children",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining("Emma"),
+        })
+      );
+    });
+  });
+
+  it("adds new child to list and closes modal after successful POST", async () => {
+    const newChild = {
+      id: "c3",
+      name: "Emma",
+      classroom: "Rainbow",
+      age: 2,
+      created_at: "2026-01-03",
+    };
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ child: newChild }) });
+
+    render(<DashboardPage />);
+    // Wait for initial GET to complete before submitting (avoids race with GET's setChildren)
+    await waitFor(() => screen.getByText(/no children added yet/i));
+
+    fireEvent.click(screen.getByRole("button", { name: /add child/i }));
+
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Emma" } });
+    fireEvent.change(screen.getByLabelText(/age/i), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText(/classroom/i), { target: { value: "Rainbow" } });
+
+    // Flush the POST chain: fetch → res.json → setState
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /^add child$/i }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(screen.getByText("Emma")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 });
 
 describe("DashboardPage — AI Match sidebar", () => {
+  beforeEach(() => {
+    global.fetch = vi.fn();
+    mockFetchChildren();
+  });
   afterEach(() => vi.clearAllMocks());
 
   it("shows top 2 AI matches", () => {
@@ -208,9 +373,8 @@ describe("DashboardPage — AI Match sidebar", () => {
     expect(screen.getByText(/#2 Match/i)).toBeInTheDocument();
   });
 
-  it("shows View All Matches button linking to /search", () => {
+  it("shows View All Matches button", () => {
     render(<DashboardPage />);
-    const btn = screen.getByRole("button", { name: /view all matches/i });
-    expect(btn).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /view all matches/i })).toBeInTheDocument();
   });
 });

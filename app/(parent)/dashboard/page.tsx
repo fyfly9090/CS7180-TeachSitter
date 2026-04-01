@@ -1,8 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+interface ChildData {
+  id: string;
+  name: string;
+  classroom: string;
+  age: number;
+}
+
+// ── Navbar ─────────────────────────────────────────────────────────────────────
 
 function Navbar() {
   const pathname = usePathname();
@@ -50,6 +61,8 @@ function Navbar() {
   );
 }
 
+// ── MobileBottomNav ────────────────────────────────────────────────────────────
+
 function MobileBottomNav() {
   const pathname = usePathname();
 
@@ -84,7 +97,42 @@ function MobileBottomNav() {
   );
 }
 
-function AddChildModal({ onClose }: { onClose: () => void }) {
+// ── AddChildModal ──────────────────────────────────────────────────────────────
+
+interface AddChildModalProps {
+  onClose: () => void;
+  onAdd: (child: ChildData) => void;
+}
+
+function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [classroom, setClassroom] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !classroom.trim() || !age) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/children", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), classroom: classroom.trim(), age: Number(age) }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error?.message ?? "Failed to add child");
+        return;
+      }
+      onAdd(data.child);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div
       role="dialog"
@@ -106,6 +154,8 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
             <input
               id="child-name"
               type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Child's name"
               className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
@@ -122,8 +172,10 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
               id="child-age"
               type="number"
               min={1}
-              max={12}
-              placeholder="Age"
+              max={10}
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder="Age (1–10)"
               className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -138,27 +190,38 @@ function AddChildModal({ onClose }: { onClose: () => void }) {
             <input
               id="child-classroom"
               type="text"
+              value={classroom}
+              onChange={(e) => setClassroom(e.target.value)}
               placeholder="e.g. Sunflower"
               className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
         </div>
 
+        {error && <p className="text-xs text-error mt-3">{error}</p>}
+
         <div className="mt-6 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 border border-outline-variant/40 text-on-surface-variant px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-surface-container transition-all"
+            disabled={submitting}
+            className="flex-1 border border-outline-variant/40 text-on-surface-variant px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-surface-container transition-all disabled:opacity-50"
           >
             Cancel
           </button>
-          <button className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary px-4 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all">
-            Add Child
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary px-4 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {submitting ? "Adding…" : "Add Child"}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+// ── AI sidebar data (static placeholder) ──────────────────────────────────────
 
 const aiSuggestions = [
   {
@@ -175,10 +238,7 @@ const aiSuggestions = [
   },
 ];
 
-const children = [
-  { name: "Lily", age: 4, classroom: "Sunflower", initials: "L" },
-  { name: "Oliver", age: 3, classroom: "Butterfly", initials: "O" },
-];
+// ── DashboardPage ──────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -186,13 +246,35 @@ export default function DashboardPage() {
   const [dateTo, setDateTo] = useState("");
   const [classroom, setClassroom] = useState("All Classrooms");
   const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [children, setChildren] = useState<ChildData[]>([]);
+
+  // Load children from API on mount
+  useEffect(() => {
+    fetch("/api/children")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.children) setChildren(data.children);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (dateFrom) params.set("start_date", dateFrom);
     if (dateTo) params.set("end_date", dateTo);
-    if (classroom !== "All Classrooms") params.set("classroom", classroom);
+    if (classroom !== "All Classrooms") params.set("classroom", encodeURIComponent(classroom));
     router.push(`/search?${params.toString()}`);
+  };
+
+  const handleDeleteChild = async (id: string) => {
+    const res = await fetch(`/api/children/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setChildren((prev) => prev.filter((c) => c.id !== id));
+    }
+  };
+
+  const handleChildAdded = (child: ChildData) => {
+    setChildren((prev) => [...prev, child]);
   };
 
   return (
@@ -200,9 +282,8 @@ export default function DashboardPage() {
       <Navbar />
       <div className="bg-background min-h-screen pt-16 pb-24 md:pb-8">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
-          {/* Top-level lg grid: main content + sidebar */}
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-            {/* Main content: col-span-2 */}
+            {/* Main content */}
             <div className="lg:col-span-2">
               {/* Page header */}
               <div>
@@ -287,24 +368,36 @@ export default function DashboardPage() {
                     Add Child
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  {children.map((child) => (
-                    <div
-                      key={child.name}
-                      className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm"
-                    >
-                      <div className="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-2xl mb-3">
-                        {child.initials}
+
+                {children.length === 0 ? (
+                  <p className="text-sm text-on-surface-variant mt-4">No children added yet.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    {children.map((child) => (
+                      <div
+                        key={child.id}
+                        className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm relative"
+                      >
+                        <button
+                          onClick={() => handleDeleteChild(child.id)}
+                          aria-label={`Delete ${child.name}`}
+                          className="absolute top-3 right-3 p-1.5 rounded-full text-on-surface-variant hover:bg-error-container hover:text-error transition-all"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">delete</span>
+                        </button>
+                        <div className="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-2xl mb-3">
+                          {child.name.charAt(0).toUpperCase()}
+                        </div>
+                        <p className="text-lg font-bold text-on-surface">{child.name}</p>
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-tertiary-fixed rounded-full text-xs font-bold text-on-tertiary-container mt-1.5">
+                          <span className="material-symbols-outlined text-[12px]">school</span>
+                          {child.classroom}
+                        </span>
+                        <p className="text-sm text-on-surface-variant mt-1.5">Age {child.age}</p>
                       </div>
-                      <p className="text-lg font-bold text-on-surface">{child.name}</p>
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-tertiary-fixed rounded-full text-xs font-bold text-on-tertiary-container mt-1.5">
-                        <span className="material-symbols-outlined text-[12px]">school</span>
-                        {child.classroom}
-                      </span>
-                      <p className="text-sm text-on-surface-variant mt-1.5">Age {child.age}</p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -357,7 +450,9 @@ export default function DashboardPage() {
 
       <MobileBottomNav />
 
-      {showAddChildModal && <AddChildModal onClose={() => setShowAddChildModal(false)} />}
+      {showAddChildModal && (
+        <AddChildModal onClose={() => setShowAddChildModal(false)} onAdd={handleChildAdded} />
+      )}
     </>
   );
 }
