@@ -337,23 +337,125 @@ describe("PATCH /api/bookings/[id] — business logic", () => {
     expect(res.status).toBe(403);
   });
 
+  test("returns 404 when teacher profile does not exist", async () => {
+    mockSupabase(TEACHER_USER, [
+      { data: null, error: { code: "PGRST116", message: "Not found" } },
+    ]);
+    const res = await PATCH(makePatchRequest(BOOKING_ID, { status: "confirmed" }), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(404);
+  });
+
+  test("returns 409 when booking is already confirmed", async () => {
+    const alreadyConfirmed = { ...BOOKING_ROW, status: "confirmed" };
+    mockSupabase(TEACHER_USER, [
+      { data: TEACHER_ROW, error: null },
+      { data: alreadyConfirmed, error: null },
+    ]);
+    const res = await PATCH(makePatchRequest(BOOKING_ID, { status: "declined" }), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.error.code).toBe("CONFLICT");
+  });
+
+  test("returns 409 when booking is already declined", async () => {
+    const alreadyDeclined = { ...BOOKING_ROW, status: "declined" };
+    mockSupabase(TEACHER_USER, [
+      { data: TEACHER_ROW, error: null },
+      { data: alreadyDeclined, error: null },
+    ]);
+    const res = await PATCH(makePatchRequest(BOOKING_ID, { status: "confirmed" }), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+    expect(res.status).toBe(409);
+  });
+
   test("returns 200 with updated booking on successful confirm", async () => {
     const confirmedBooking = { ...BOOKING_ROW, status: "confirmed" };
     // 1st from(): get teacher record
-    // 2nd from(): get booking (owned by this teacher)
+    // 2nd from(): get booking (owned by this teacher, status: pending)
     // 3rd from(): update booking → returns updated row
+    // 4th from(): update availability → mark is_booked = true
     mockSupabase(TEACHER_USER, [
       { data: TEACHER_ROW, error: null },
       { data: BOOKING_ROW, error: null },
       { data: confirmedBooking, error: null },
+      { data: null, error: null },
     ]);
-    const res = await PATCH(makePatchRequest("booking-uuid-1", { status: "confirmed" }), {
-      params: Promise.resolve({ id: "booking-uuid-1" }),
+    const res = await PATCH(makePatchRequest(BOOKING_ID, { status: "confirmed" }), {
+      params: Promise.resolve({ id: BOOKING_ID }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.booking.id).toBe(BOOKING_ID);
     expect(body.booking.status).toBe("confirmed");
+  });
+
+  test("marks availability as booked when confirming", async () => {
+    const confirmedBooking = { ...BOOKING_ROW, status: "confirmed" };
+    let fromCallIndex = 0;
+    const fromChains: MockChain[] = [];
+
+    vi.mocked(createServerClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: TEACHER_USER }, error: null }),
+      },
+      from: vi.fn().mockImplementation(() => {
+        const results = [
+          { data: TEACHER_ROW, error: null },
+          { data: BOOKING_ROW, error: null },
+          { data: confirmedBooking, error: null },
+          { data: null, error: null },
+        ];
+        const chain = makeChain(results[fromCallIndex] ?? { data: null, error: null });
+        fromChains[fromCallIndex] = chain;
+        fromCallIndex++;
+        return chain;
+      }),
+    } as never);
+
+    await PATCH(makePatchRequest(BOOKING_ID, { status: "confirmed" }), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+
+    // 4th from() call should be the availability update
+    const availChain = fromChains[3];
+    expect(availChain).toBeDefined();
+    expect(availChain.update).toHaveBeenCalledWith({ is_booked: true });
+    expect(availChain.eq).toHaveBeenCalledWith("teacher_id", TEACHER_ID);
+    expect(availChain.lte).toHaveBeenCalledWith("start_date", BOOKING_ROW.start_date);
+    expect(availChain.gte).toHaveBeenCalledWith("end_date", BOOKING_ROW.end_date);
+  });
+
+  test("does not update availability when declining", async () => {
+    const declinedBooking = { ...BOOKING_ROW, status: "declined" };
+    let fromCallCount = 0;
+
+    vi.mocked(createServerClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: TEACHER_USER }, error: null }),
+      },
+      from: vi.fn().mockImplementation(() => {
+        const results = [
+          { data: TEACHER_ROW, error: null },
+          { data: BOOKING_ROW, error: null },
+          { data: declinedBooking, error: null },
+        ];
+        const chain = makeChain(results[fromCallCount] ?? { data: null, error: null });
+        fromCallCount++;
+        return chain;
+      }),
+    } as never);
+
+    await PATCH(makePatchRequest(BOOKING_ID, { status: "declined" }), {
+      params: Promise.resolve({ id: BOOKING_ID }),
+    });
+
+    // Only 3 from() calls: teacher, booking, update — no availability update
+    expect(fromCallCount).toBe(3);
   });
 
   test("returns 200 with updated booking on successful decline", async () => {
@@ -363,8 +465,8 @@ describe("PATCH /api/bookings/[id] — business logic", () => {
       { data: BOOKING_ROW, error: null },
       { data: declinedBooking, error: null },
     ]);
-    const res = await PATCH(makePatchRequest("booking-uuid-1", { status: "declined" }), {
-      params: Promise.resolve({ id: "booking-uuid-1" }),
+    const res = await PATCH(makePatchRequest(BOOKING_ID, { status: "declined" }), {
+      params: Promise.resolve({ id: BOOKING_ID }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();

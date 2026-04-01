@@ -29,18 +29,32 @@ export const PATCH = withApiHandler(async (req: Request, ctx: unknown) => {
 
   if (teacherError || !teacher) throw errors.notFound("Teacher profile");
 
-  // Fetch the booking
+  // Fetch the booking (include dates for availability side-effect)
   const { data: booking, error: bookingError } = await supabase
     .from("bookings")
-    .select("id, teacher_id, status")
+    .select("id, teacher_id, status, start_date, end_date")
     .eq("id", id)
     .single();
 
   if (bookingError || !booking) throw errors.notFound("Booking");
 
+  const typedBooking = booking as {
+    id: string;
+    teacher_id: string;
+    status: string;
+    start_date: string;
+    end_date: string;
+  };
+  const typedTeacher = teacher as { id: string };
+
   // Verify ownership
-  if ((booking as { teacher_id: string }).teacher_id !== (teacher as { id: string }).id) {
+  if (typedBooking.teacher_id !== typedTeacher.id) {
     throw errors.forbidden();
+  }
+
+  // Only pending bookings can be confirmed or declined
+  if (typedBooking.status !== "pending") {
+    throw errors.conflict(`Booking is already ${typedBooking.status}`);
   }
 
   // Update status
@@ -52,6 +66,16 @@ export const PATCH = withApiHandler(async (req: Request, ctx: unknown) => {
     .single();
 
   if (updateError || !updated) throw errors.internal();
+
+  // Side effect: mark availability as booked when confirmed
+  if (status === "confirmed") {
+    await supabase
+      .from("availability")
+      .update({ is_booked: true })
+      .eq("teacher_id", typedBooking.teacher_id)
+      .lte("start_date", typedBooking.start_date)
+      .gte("end_date", typedBooking.end_date);
+  }
 
   return NextResponse.json({ booking: updated });
 });
