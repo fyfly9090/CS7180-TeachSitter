@@ -169,6 +169,12 @@ export const updateTeacherProfileSchema = z.object({
 export type UpdateTeacherProfileInput = z.infer<typeof updateTeacherProfileSchema>;
 
 // =====================
+// UUID Path Param — validates dynamic route [id] segments
+// =====================
+
+export const uuidParamSchema = z.string().uuid("Invalid ID format");
+
+// =====================
 // Evals Query — GET /api/evals
 // z.coerce.number() converts URL string params to numbers before validation.
 // =====================
