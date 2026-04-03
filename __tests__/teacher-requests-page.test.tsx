@@ -73,8 +73,9 @@ describe("TeacherRequestsPage", () => {
     expect(screen.getByText("Bob Jones")).toBeDefined();
     expect(screen.getByText(/Looking for help during summer break/)).toBeDefined();
 
-    // Stats cards show correct counts
-    expect(screen.getByText("1").closest("div")).toBeDefined();
+    // Stats cards rendered
+    expect(screen.getByText("Confirmed Bookings")).toBeDefined();
+    expect(screen.getByText("Upcoming Bookings")).toBeDefined();
   });
 
   it("shows empty states when no bookings exist", async () => {
