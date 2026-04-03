@@ -152,7 +152,7 @@ Comment posted to #17:
 
 ---
 
-## Part 2: Retrospective — MCP Integration Analysis (~500 words)
+## Part 2: Retrospective — MCP Integration Analysis
 
 ### Context Switching: Eliminating the Browser–VS Code–Terminal Triangle
 
