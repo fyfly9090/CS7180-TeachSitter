@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { formatDateRange } from "@/lib/utils/format";
-import type { BookingWithParent, Teacher } from "@/types";
+import type { BookingWithParent } from "@/types";
 
-export default function TeacherDashboardPage() {
-  const [teacherName, setTeacherName] = useState("Teacher");
+export default function TeacherRequestsPage() {
   const [confirmed, setConfirmed] = useState<BookingWithParent[]>([]);
   const [pending, setPending] = useState<BookingWithParent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,14 +12,9 @@ export default function TeacherDashboardPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/teachers/me").then((r) => (r.ok ? r.json() : null)),
-      fetch("/api/teachers/me/bookings").then((r) => (r.ok ? r.json() : null)),
-    ])
-      .then(([meData, bookingsData]) => {
-        if (meData?.teacher) {
-          setTeacherName((meData.teacher as Teacher).full_name ?? "Teacher");
-        }
+    fetch("/api/teachers/me/bookings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((bookingsData) => {
         if (bookingsData) {
           setConfirmed((bookingsData as { confirmed: BookingWithParent[] }).confirmed ?? []);
           setPending((bookingsData as { pending: BookingWithParent[] }).pending ?? []);
@@ -29,17 +23,15 @@ export default function TeacherDashboardPage() {
         }
       })
       .catch(() => {
-        setError("Unable to load dashboard data.");
+        setError("Unable to load booking requests.");
       })
       .finally(() => setLoading(false));
   }, []);
 
   async function handleUpdateStatus(bookingId: string, newStatus: "confirmed" | "declined") {
-    // Snapshot for rollback
     const prevPending = pending;
     const prevConfirmed = confirmed;
 
-    // Optimistic update
     const booking = pending.find((b) => b.id === bookingId);
     if (!booking) return;
 
@@ -56,7 +48,6 @@ export default function TeacherDashboardPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) {
-        // Revert on failure
         setPending(prevPending);
         setConfirmed(prevConfirmed);
         setError("Failed to update booking. Please try again.");
@@ -74,14 +65,10 @@ export default function TeacherDashboardPage() {
     <main className="pt-16 pb-24 md:pb-8 bg-background min-h-screen">
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
         {/* Page header */}
-        <h1 className="text-3xl font-bold text-on-surface">Good morning, {teacherName}!</h1>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-tertiary"></span>
-          </span>
-          <span className="text-sm text-on-surface-variant">Available for bookings</span>
-        </div>
+        <h1 className="text-3xl font-bold text-on-surface">Booking Requests</h1>
+        <p className="text-on-surface-variant mt-1">
+          Review and manage your incoming booking requests.
+        </p>
 
         {/* Error banner */}
         {error && (
@@ -106,7 +93,7 @@ export default function TeacherDashboardPage() {
                   event_available
                 </span>
                 <p className="text-4xl font-bold text-on-surface mt-2">{confirmed.length}</p>
-                <p className="text-sm text-on-surface-variant font-medium">Upcoming Sessions</p>
+                <p className="text-sm text-on-surface-variant font-medium">Confirmed Bookings</p>
               </div>
               <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm">
                 <span className="material-symbols-outlined text-2xl text-secondary">
@@ -119,9 +106,9 @@ export default function TeacherDashboardPage() {
 
             {/* Main grid */}
             <div className="grid lg:grid-cols-12 gap-8">
-              {/* Left — Upcoming Sessions */}
+              {/* Left — Upcoming Bookings */}
               <div className="lg:col-span-8">
-                <h2 className="text-xl font-bold text-on-surface mb-4">Upcoming Sessions</h2>
+                <h2 className="text-xl font-bold text-on-surface mb-4">Upcoming Bookings</h2>
 
                 <div className="flex flex-col gap-3">
                   {confirmed.map((session) => {
@@ -134,7 +121,7 @@ export default function TeacherDashboardPage() {
                     return (
                       <div
                         key={session.id}
-                        className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group flex gap-4"
+                        className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group flex items-center gap-4"
                       >
                         <div className="w-14 h-14 rounded-xl bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
                           {initials}
@@ -157,25 +144,18 @@ export default function TeacherDashboardPage() {
                             </span>
                           </div>
                         </div>
+                        <button className="bg-surface-container-high px-4 py-2 rounded-lg text-sm font-semibold text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+                          Details
+                        </button>
                       </div>
                     );
                   })}
 
                   {confirmed.length === 0 && (
                     <p className="text-sm text-on-surface-variant text-center py-8">
-                      No upcoming sessions.
+                      No upcoming bookings.
                     </p>
                   )}
-                </div>
-
-                {/* Policy reminder */}
-                <div className="mt-6 bg-primary-fixed/40 rounded-2xl p-4 border border-primary-fixed flex items-start gap-3">
-                  <span className="material-symbols-outlined text-primary text-xl flex-shrink-0">
-                    lightbulb
-                  </span>
-                  <p className="text-sm text-on-surface-variant">
-                    Reminder: Confirm or decline requests within 48 hours so parents can plan ahead.
-                  </p>
                 </div>
               </div>
 
@@ -187,6 +167,11 @@ export default function TeacherDashboardPage() {
                       pending_actions
                     </span>
                     <h2 className="text-base font-bold text-on-surface">Pending Requests</h2>
+                    {pending.length > 0 && (
+                      <span className="bg-secondary text-on-secondary text-xs px-2 py-0.5 rounded-full font-bold">
+                        {pending.length}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-3">
