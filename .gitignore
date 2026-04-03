@@ -22,9 +22,8 @@ yarn-error.log*
 .DS_Store
 *.pem
 
-# Claude Code local config (keep commands/ tracked)
-.claude/*
-!.claude/commands/
+# Claude Code (worktrees are ephemeral, don't track)
+.claude/worktrees/
 
 # TypeScript
 *.tsbuildinfo

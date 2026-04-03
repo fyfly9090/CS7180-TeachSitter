@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" issue create \\\\\n  --repo fyfly9090/CS7180-TeachSitter \\\\\n  --milestone \"Sprint 4 — Booking Flow & Polish\" \\\\\n  --label \"frontend\" \\\\\n  --title \"Parent bookings page — status tracking \\(UI\\)\" \\\\\n  --body-file \"C:/zhuanma/CS7180/Project3/CS7180-TeachSitter/.tmp-issues/issue_16.md\")",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" issue create \\\\\n  --repo fyfly9090/CS7180-TeachSitter \\\\\n  --milestone \"Sprint 4 — Booking Flow & Polish\" \\\\\n  --label \"frontend\" \\\\\n  --title \"Parent dashboard & profile pages \\(UI\\)\" \\\\\n  --body-file \"C:/zhuanma/CS7180/Project3/CS7180-TeachSitter/.tmp-issues/issue_17.md\")",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" issue create \\\\\n  --repo fyfly9090/CS7180-TeachSitter \\\\\n  --milestone \"Sprint 4 — Booking Flow & Polish\" \\\\\n  --label \"backend\" \\\\\n  --title \"GET /api/evals — admin metrics endpoint\" \\\\\n  --body-file \"C:/zhuanma/CS7180/Project3/CS7180-TeachSitter/.tmp-issues/issue_18.md\")",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" issue create \\\\\n  --repo fyfly9090/CS7180-TeachSitter \\\\\n  --milestone \"Sprint 4 — Booking Flow & Polish\" \\\\\n  --label \"testing\" \\\\\n  --title \"E2E tests for critical user flows \\(Playwright\\)\" \\\\\n  --body-file \"C:/zhuanma/CS7180/Project3/CS7180-TeachSitter/.tmp-issues/issue_19.md\")",
+      "Bash(find /c/zhuanma/CS7180/Project3/CS7180-TeachSitter -path *__tests__* -name *.test.ts -o -path *__tests__* -name *.spec.ts)",
+      "Bash(node -e \"const p=require\\(''./node_modules/eslint-config-next/package.json''\\); console.log\\(''version:'', p.version\\); console.log\\(''exports:'', JSON.stringify\\(Object.keys\\(p.exports||{}\\)\\)\\)\")",
+      "Bash(node -e \"const m=require\\(''./node_modules/eslint-config-next''\\); console.log\\(typeof m, typeof m.default, Array.isArray\\(m\\) ? ''array len=''+m.length : ''not array''\\)\")",
+      "Bash(ls -la /c/zhuanma/CS7180/Project3/CS7180-TeachSitter/app/\\\\\\(teacher\\\\\\)/22)",
+      "Bash(grep -o \"className=\"\"[^\"\"]*\"\"\" /c/zhuanma/CS7180/Project3/CS7180-TeachSitter/docs/mockups/Teacher Profile Setup * TeachSitter.html)",
+      "Bash(find . -path ./node_modules -prune -o -name *.tsx -o -name *.ts -type f)",
+      "Bash(find /c/zhuanma/CS7180/Project3/CS7180-TeachSitter/components -name *.tsx -o -name *.ts)",
+      "Bash(dir \"/c/zhuanma/CS7180/Project3/CS7180-TeachSitter/components/features\")",
+      "Bash(dir \"/c/zhuanma/CS7180/Project3/CS7180-TeachSitter/components/ui\")",
+      "mcp__github__get_issue",
+      "Bash(grep -E \"\\\\.sql$\")",
+      "Bash(find /c/zhuanma/CS7180/Project3/CS7180-TeachSitter -name *issue*plan* -o -name *plan*issue*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -n \"GET\\\\|export\" /c/zhuanma/CS7180/Project3/CS7180-TeachSitter/app/api/bookings/[id]/route.ts)",
+      "Bash(grep -r \"PR #29\\\\|PR 29\\\\|#29\\\\|PR.*29\" /c/zhuanma/CS7180/Project3/CS7180-TeachSitter --include=*.md --include=*.txt)",
+      "Bash(ls:*)",
+      "Bash(find /c/zhuanma/CS7180/Project3/CS7180-TeachSitter -name *issue*7* -o -name *availability*management*)",
+      "Bash(grep:*)",
+      "Bash(find /c/zhuanma/CS7180/Project3/CS7180-TeachSitter/docs -name PLAN*.md -o -name IMPLEMENT*.md)",
+      "Bash(npx prettier:*)",
+      "Bash(npm test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(find /c/zhuanma/CS7180/Project3/CS7180-TeachSitter/app/api/teachers/[id] -name \"*.ts\")",
+      "Bash(find C:zhuanmaCS7180Project3CS7180-TeachSitter -type f -name vitest.setup.* -o -name setup.ts)",
+      "Bash(find /c/zhuanma/CS7180/Project3/CS7180-TeachSitter -type f \\\\\\(-name *.sql -o -name *schema* -o -name *migration* \\\\\\))",
+      "Bash(xargs dirname:*)",
+      "Bash(find /c/zhuanma/CS7180/Project3/CS7180-TeachSitter/components -type f -name *teacher* -o -path *components*booking* -o -path *components*dashboard*)",
+      "Bash(ls -la /c/zhuanma/CS7180/Project3/CS7180-TeachSitter/app/\\\\\\(parent\\\\\\)/)",
+      "Bash(wc:*)",
+      "Bash(npx vitest:*)",
+      "Bash(node:*)"
+    ]
+  }
+}
