@@ -41,18 +41,10 @@ test.describe("Teacher Dashboard page", () => {
 
     const url = page.url();
     if (url.includes("/teacher/dashboard")) {
-      // Check navigation links
-      const dashboardLink = page.getByRole("link", { name: /dashboard/i }).first();
-      const requestsLink = page
-        .getByRole("link", { name: /request/i })
-        .or(page.getByRole("link", { name: /booking/i }))
-        .first();
-
-      // At least one nav element should be visible
-      const hasDashboard = await dashboardLink.isVisible().catch(() => false);
-      const hasRequests = await requestsLink.isVisible().catch(() => false);
-
-      expect(hasDashboard || hasRequests).toBe(true);
+      // Verify dashboard nav link is visible (rendered by layout or inline navbar)
+      await expect(page.getByRole("link", { name: /dashboard/i }).first()).toBeVisible({
+        timeout: 10_000,
+      });
     }
   });
 

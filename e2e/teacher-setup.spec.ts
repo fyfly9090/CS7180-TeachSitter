@@ -31,16 +31,14 @@ test.describe("Teacher Setup page", () => {
 
     const url = page.url();
     if (url.includes("/teacher/setup")) {
-      // Look for common profile form fields
+      // Profile form has labeled inputs for classroom and bio
       const hasClassroom = await page
         .getByLabel(/classroom/i)
-        .or(page.getByText(/classroom/i).first())
         .isVisible({ timeout: 10_000 })
         .catch(() => false);
 
       const hasBio = await page
         .getByLabel(/bio/i)
-        .or(page.getByText(/bio/i).first())
         .isVisible({ timeout: 10_000 })
         .catch(() => false);
 

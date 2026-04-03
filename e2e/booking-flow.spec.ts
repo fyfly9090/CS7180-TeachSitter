@@ -72,8 +72,9 @@ test.describe("Parent Booking Flow", () => {
       .isVisible({ timeout: 10_000 })
       .catch(() => false);
 
+    // Actual button text is "Confirm Booking" (bookings/new/page.tsx)
     const hasSubmitBtn = await page
-      .getByRole("button", { name: /confirm|book|submit|send/i })
+      .getByRole("button", { name: /confirm booking/i })
       .first()
       .isVisible({ timeout: 10_000 })
       .catch(() => false);

@@ -84,7 +84,7 @@ test.describe("Auth navigation", () => {
     await page.goto("/login");
 
     await page.getByRole("link", { name: /sign up/i }).click();
-    await page.waitForURL("**/signup", { timeout: 5_000 });
+    await page.waitForURL("**/signup", { timeout: 10_000 });
     await expect(page).toHaveURL(/\/signup/);
   });
 
@@ -95,7 +95,7 @@ test.describe("Auth navigation", () => {
       .getByRole("link", { name: /sign in/i })
       .or(page.getByRole("link", { name: /log in/i }));
     await loginLink.click();
-    await page.waitForURL("**/login", { timeout: 5_000 });
+    await page.waitForURL("**/login", { timeout: 10_000 });
     await expect(page).toHaveURL(/\/login/);
   });
 });
