@@ -247,25 +247,28 @@ describe("DashboardPage — delete child", () => {
   });
   afterEach(() => vi.clearAllMocks());
 
-  it("shows a delete button on each child card", async () => {
+  it("shows an edit button on each child card", async () => {
     mockFetchChildren();
     render(<DashboardPage />);
     await waitFor(() => {
-      const deleteBtns = screen.getAllByRole("button", { name: /delete/i });
-      expect(deleteBtns.length).toBe(2);
+      const editBtns = screen.getAllByRole("button", { name: /edit/i });
+      expect(editBtns.length).toBe(2);
     });
   });
 
-  it("calls DELETE /api/children/:id when delete clicked", async () => {
+  it("calls DELETE /api/children/:id when delete clicked inside edit modal", async () => {
     (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: CHILDREN }) }) // GET children
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: [] }) }) // GET bookings
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) }); // DELETE response
 
     render(<DashboardPage />);
-    await waitFor(() => screen.getAllByRole("button", { name: /delete/i }));
+    await waitFor(() => screen.getAllByRole("button", { name: /edit lily/i }));
 
-    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /edit lily/i }));
+    await waitFor(() => screen.getByRole("button", { name: /delete lily/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /delete lily/i }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -282,9 +285,12 @@ describe("DashboardPage — delete child", () => {
       .mockResolvedValueOnce({ ok: true, status: 204, json: () => Promise.resolve({}) }); // DELETE
 
     render(<DashboardPage />);
-    await waitFor(() => screen.getAllByRole("button", { name: /delete/i }));
+    await waitFor(() => screen.getAllByRole("button", { name: /edit lily/i }));
 
-    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /edit lily/i }));
+    await waitFor(() => screen.getByRole("button", { name: /delete lily/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /delete lily/i }));
 
     await waitFor(() => {
       expect(screen.queryByText("Lily")).not.toBeInTheDocument();

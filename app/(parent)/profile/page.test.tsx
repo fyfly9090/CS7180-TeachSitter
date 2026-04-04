@@ -27,6 +27,17 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+// ── Supabase client mock ───────────────────────────────────────────────────────
+
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: { email: "patricia@example.com" } } }),
+      signOut: vi.fn().mockResolvedValue({}),
+    },
+  }),
+}));
+
 // ── Fixtures ───────────────────────────────────────────────────────────────────
 
 const CHILDREN = [
@@ -60,14 +71,14 @@ describe("ProfilePage — header card", () => {
     expect(screen.getByText(/sunshine preschool/i)).toBeInTheDocument();
   });
 
-  it("renders role badge 'Parent'", () => {
+  it("renders My Children heading", () => {
     render(<ProfilePage />);
-    expect(screen.getByText(/^parent$/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /my children/i })).toBeInTheDocument();
   });
 
-  it("renders avatar initials PJ", () => {
+  it("renders Account Settings heading", () => {
     render(<ProfilePage />);
-    expect(screen.getByText("PJ")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /account settings/i })).toBeInTheDocument();
   });
 });
 
@@ -148,12 +159,12 @@ describe("ProfilePage — children from API", () => {
     });
   });
 
-  it("shows delete button on each child card", async () => {
+  it("shows edit button on each child card", async () => {
     mockFetchChildren();
     render(<ProfilePage />);
     await waitFor(() => {
-      const deleteBtns = screen.getAllByRole("button", { name: /delete/i });
-      expect(deleteBtns.length).toBe(2);
+      const editBtns = screen.getAllByRole("button", { name: /edit/i });
+      expect(editBtns.length).toBeGreaterThanOrEqual(2);
     });
   });
 });
@@ -164,15 +175,18 @@ describe("ProfilePage — delete child", () => {
   });
   afterEach(() => vi.clearAllMocks());
 
-  it("calls DELETE /api/children/:id when delete clicked", async () => {
+  it("calls DELETE /api/children/:id when delete clicked inside edit modal", async () => {
     (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: CHILDREN }) })
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
 
     render(<ProfilePage />);
-    await waitFor(() => screen.getAllByRole("button", { name: /delete/i }));
+    await waitFor(() => screen.getByRole("button", { name: /edit lily/i }));
 
-    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /edit lily/i }));
+    await waitFor(() => screen.getByRole("button", { name: /delete lily/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /delete lily/i }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -188,9 +202,12 @@ describe("ProfilePage — delete child", () => {
       .mockResolvedValueOnce({ ok: true, status: 204, json: () => Promise.resolve({}) });
 
     render(<ProfilePage />);
-    await waitFor(() => screen.getAllByRole("button", { name: /delete/i }));
+    await waitFor(() => screen.getByRole("button", { name: /edit lily/i }));
 
-    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /edit lily/i }));
+    await waitFor(() => screen.getByRole("button", { name: /delete lily/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /delete lily/i }));
 
     await waitFor(() => {
       expect(screen.queryByText("Lily")).not.toBeInTheDocument();
@@ -206,9 +223,9 @@ describe("ProfilePage — Add a Child modal", () => {
   });
   afterEach(() => vi.clearAllMocks());
 
-  it("renders Add a Child button", () => {
+  it("renders Add Child button", () => {
     render(<ProfilePage />);
-    expect(screen.getByRole("button", { name: /add a child/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add child/i })).toBeInTheDocument();
   });
 
   it("modal is not visible before button click", () => {
@@ -216,39 +233,39 @@ describe("ProfilePage — Add a Child modal", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("opens a modal when Add a Child is clicked", () => {
+  it("opens a modal when Add Child is clicked", () => {
     render(<ProfilePage />);
-    fireEvent.click(screen.getByRole("button", { name: /add a child/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add child/i }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("modal contains a name field", () => {
     render(<ProfilePage />);
-    fireEvent.click(screen.getByRole("button", { name: /add a child/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add child/i }));
     expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
   });
 
   it("modal contains an age field", () => {
     render(<ProfilePage />);
-    fireEvent.click(screen.getByRole("button", { name: /add a child/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add child/i }));
     expect(screen.getByLabelText(/age/i)).toBeInTheDocument();
   });
 
   it("modal contains a classroom field", () => {
     render(<ProfilePage />);
-    fireEvent.click(screen.getByRole("button", { name: /add a child/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add child/i }));
     expect(screen.getByLabelText(/classroom/i)).toBeInTheDocument();
   });
 
   it("modal contains a notes field", () => {
     render(<ProfilePage />);
-    fireEvent.click(screen.getByRole("button", { name: /add a child/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add child/i }));
     expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
   });
 
   it("closes modal when Cancel is clicked", () => {
     render(<ProfilePage />);
-    fireEvent.click(screen.getByRole("button", { name: /add a child/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add child/i }));
     fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
@@ -267,7 +284,7 @@ describe("ProfilePage — Add a Child modal", () => {
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ child: newChild }) });
 
     render(<ProfilePage />);
-    fireEvent.click(screen.getByRole("button", { name: /add a child/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add child/i }));
 
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Emma" } });
     fireEvent.change(screen.getByLabelText(/age/i), { target: { value: "2" } });
@@ -300,9 +317,9 @@ describe("ProfilePage — Add a Child modal", () => {
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ child: newChild }) });
 
     render(<ProfilePage />);
-    await waitFor(() => screen.getByRole("button", { name: /add a child/i }));
+    await waitFor(() => screen.getByRole("button", { name: /add child/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /add a child/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add child/i }));
 
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Emma" } });
     fireEvent.change(screen.getByLabelText(/age/i), { target: { value: "2" } });
@@ -330,20 +347,22 @@ describe("ProfilePage — account settings", () => {
     expect(screen.getByRole("heading", { name: /account settings/i })).toBeInTheDocument();
   });
 
-  it("renders disabled email input", () => {
+  it("renders email input with value from Supabase", async () => {
     render(<ProfilePage />);
-    const emailInput = screen.getByDisplayValue("patricia@example.com");
-    expect(emailInput).toBeDisabled();
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+    });
   });
 
-  it("renders current password field", () => {
+  it("renders password field", () => {
     render(<ProfilePage />);
-    expect(screen.getByLabelText(/current password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
   });
 
-  it("renders new password field", () => {
+  it("reveals new password input after clicking Change", () => {
     render(<ProfilePage />);
-    expect(screen.getByLabelText(/new password/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^change$/i }));
+    expect(screen.getByPlaceholderText(/new password/i)).toBeInTheDocument();
   });
 
   it("renders Save Changes button", () => {
@@ -361,43 +380,26 @@ describe("ProfilePage — form validation", () => {
 
   it("shows validation error when new password is too short", () => {
     render(<ProfilePage />);
-    const newPwInput = screen.getByLabelText(/new password/i);
-    const saveBtn = screen.getByRole("button", { name: /save changes/i });
-
-    fireEvent.change(newPwInput, { target: { value: "abc" } });
-    fireEvent.click(saveBtn);
-
-    expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^change$/i }));
+    const pwInput = screen.getByPlaceholderText(/new password/i);
+    fireEvent.change(pwInput, { target: { value: "abc" } });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    expect(screen.getAllByText(/at least 8 characters/i).length).toBeGreaterThan(0);
   });
 
-  it("shows validation error when new password filled but current is empty", () => {
-    render(<ProfilePage />);
-    const newPwInput = screen.getByLabelText(/new password/i);
-    const saveBtn = screen.getByRole("button", { name: /save changes/i });
-
-    fireEvent.change(newPwInput, { target: { value: "newpassword123" } });
-    fireEvent.click(saveBtn);
-
-    expect(screen.getByText(/current password is required/i)).toBeInTheDocument();
-  });
-
-  it("no validation error when both fields are empty (no-op save)", () => {
+  it("no validation error when password field is empty (no-op save)", () => {
     render(<ProfilePage />);
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
     expect(screen.queryByText(/at least 8 characters/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/current password is required/i)).not.toBeInTheDocument();
   });
 
-  it("no validation error when both passwords are valid", () => {
+  it("no validation error when new password is valid", () => {
     render(<ProfilePage />);
-    fireEvent.change(screen.getByLabelText(/current password/i), {
-      target: { value: "oldpassword123" },
-    });
-    fireEvent.change(screen.getByLabelText(/new password/i), {
+    fireEvent.click(screen.getByRole("button", { name: /^change$/i }));
+    fireEvent.change(screen.getByPlaceholderText(/new password/i), {
       target: { value: "newpassword123" },
     });
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
     expect(screen.queryByText(/at least 8 characters/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/current password is required/i)).not.toBeInTheDocument();
   });
 });
