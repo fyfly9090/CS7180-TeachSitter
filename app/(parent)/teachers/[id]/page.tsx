@@ -40,6 +40,12 @@ function getDisplayName(teacher: TeacherProfile): string {
   return teacher.full_name ?? emailToName(teacher.name);
 }
 
+function getFirstName(displayName: string): string {
+  const honorifics = new Set(["ms.", "mr.", "mrs.", "dr.", "prof."]);
+  const words = displayName.split(/\s+/);
+  return words.find((w) => !honorifics.has(w.toLowerCase())) ?? words[0];
+}
+
 function getInitials(name: string): string {
   const words = name.split(/\s+/).filter(Boolean);
   if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
@@ -305,7 +311,7 @@ export default function TeacherProfilePage({ params }: { params: Promise<{ id: s
                 href={bookingHref}
                 className="block w-full py-4 bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold rounded-xl shadow-lg hover:opacity-90 active:scale-95 transition-all text-sm text-center"
               >
-                Request {displayName.split(/\s+/)[0]}
+                Request {getFirstName(displayName)}
               </Link>
             </>
           )}
