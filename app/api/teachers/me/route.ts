@@ -32,6 +32,8 @@ export const GET = withApiHandler(async () => {
         classroom: "",
         bio: "",
         full_name: fullName || null,
+        hourly_rate: null,
+        position: null,
       })
       .select()
       .single();
