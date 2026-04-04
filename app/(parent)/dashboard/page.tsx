@@ -43,6 +43,14 @@ interface AiSuggestion {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+function emailToName(email: string): string {
+  const local = email.includes("@") ? email.split("@")[0] : email;
+  return local
+    .split(/[._\-]+/)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" ");
+}
+
 function formatAge(age: number): string {
   return age === 1 ? "1 Year Old" : `${age} Years Old`;
 }
@@ -503,6 +511,7 @@ export default function DashboardPage() {
           teachers?: Array<{
             id: string;
             name: string;
+            full_name?: string | null;
             classroom: string;
             bio?: string;
             availability: Array<{
@@ -516,16 +525,17 @@ export default function DashboardPage() {
           if (!data.teachers) return;
           setSuggestedTeachers(
             data.teachers.slice(0, 2).map((t) => {
-              const words = (t.name ?? "").split(/\s+/).filter(Boolean);
+              const displayName = t.full_name ?? emailToName(t.name);
+              const words = displayName.split(/\s+/).filter(Boolean);
               const initials =
                 words.length >= 2
                   ? (words[0][0] + words[1][0]).toUpperCase()
-                  : (t.name ?? "?").slice(0, 2).toUpperCase();
+                  : displayName.slice(0, 2).toUpperCase();
               return {
                 teacherId: t.id,
                 initials,
                 shortName: words.slice(0, 2).join(" "),
-                name: t.name ?? "Teacher",
+                name: displayName,
                 classroom: t.classroom ?? "",
                 role: `${t.classroom ?? ""} Teacher`,
                 availability: (t.availability ?? []).map((a) => ({

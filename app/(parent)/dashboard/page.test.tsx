@@ -39,7 +39,8 @@ const CHILDREN = [
 const AI_TEACHERS = [
   {
     id: "11111111-1111-1111-1111-111111111111",
-    name: "Ms. Clara H.",
+    name: "ms.clara@teachsitter.dev",
+    full_name: "Ms. Clara H.",
     classroom: "Sunshine",
     bio: "Ms. Clara is Leo's primary teacher. She's already familiar with his afternoon routine.",
     availability: [
@@ -48,7 +49,8 @@ const AI_TEACHERS = [
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
-    name: "Ms. Elena V.",
+    name: "ms.elena@teachsitter.dev",
+    full_name: "Ms. Elena V.",
     classroom: "Little Sprouts",
     bio: "Maya responds exceptionally well to Elena during morning play.",
     availability: [
