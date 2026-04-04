@@ -62,15 +62,13 @@ function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <button
-            className="p-2 rounded-full hover:bg-surface-container transition-colors"
-            aria-label="Notifications"
+          <Link
+            href="/dashboard"
+            className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none hover:opacity-80 transition-opacity"
+            aria-label="Go to dashboard"
           >
-            <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
-          </button>
-          <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
             P
-          </div>
+          </Link>
         </div>
       </div>
     </header>

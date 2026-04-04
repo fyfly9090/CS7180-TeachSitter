@@ -445,6 +445,30 @@ describe("DashboardPage — Quick Match AI sidebar", () => {
     const viewProfileBtns = screen.getAllByRole("button", { name: /view profile/i });
     expect(viewProfileBtns.length).toBe(2);
   });
+
+  it("Request button navigates to /bookings/new with teacher_id", () => {
+    render(<DashboardPage />);
+    fireEvent.click(screen.getByRole("button", { name: /request ms\. clara/i }));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/bookings/new?teacher_id="));
+  });
+
+  it("Request button includes teacher_name in URL", () => {
+    render(<DashboardPage />);
+    fireEvent.click(screen.getByRole("button", { name: /request ms\. clara/i }));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("teacher_name="));
+  });
+
+  it("Request button includes availability in URL", () => {
+    render(<DashboardPage />);
+    fireEvent.click(screen.getByRole("button", { name: /request ms\. clara/i }));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("availability="));
+  });
+
+  it("View Profile button navigates to /search with teacher name filter", () => {
+    render(<DashboardPage />);
+    fireEvent.click(screen.getAllByRole("button", { name: /view profile/i })[0]);
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/search?name="));
+  });
 });
 
 describe("DashboardPage — Active Requests", () => {

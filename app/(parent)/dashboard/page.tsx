@@ -74,15 +74,13 @@ function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <button
-            className="p-2 rounded-full hover:bg-surface-container transition-colors"
-            aria-label="Notifications"
+          <Link
+            href="/dashboard"
+            className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none hover:opacity-80 transition-opacity"
+            aria-label="Go to dashboard"
           >
-            <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
-          </button>
-          <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
             P
-          </div>
+          </Link>
         </div>
       </div>
     </header>
@@ -122,6 +120,178 @@ function MobileBottomNav() {
         })}
       </div>
     </nav>
+  );
+}
+
+// ── EditChildModal ─────────────────────────────────────────────────────────────
+
+interface EditChildModalProps {
+  child: ChildData;
+  onClose: () => void;
+  onUpdate: (child: ChildData) => void;
+  onDelete: (id: string) => void;
+}
+
+function EditChildModal({ child, onClose, onUpdate, onDelete }: EditChildModalProps) {
+  const [name, setName] = useState(child.name);
+  const [age, setAge] = useState(String(child.age));
+  const [classroom, setClassroom] = useState(child.classroom);
+  const [notes, setNotes] = useState(child.notes ?? "");
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !classroom.trim() || !age) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/children/${child.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          classroom: classroom.trim(),
+          age: Number(age),
+          notes: notes.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error?.message ?? "Failed to update child");
+        return;
+      }
+      onUpdate(data.child);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    const res = await fetch(`/api/children/${child.id}`, { method: "DELETE" });
+    if (res.ok) {
+      onDelete(child.id);
+      onClose();
+    } else {
+      setError("Failed to delete child");
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Edit Child"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+    >
+      <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm shadow-xl border border-outline-variant/20">
+        <h2 className="text-lg font-bold text-on-surface mb-5">Edit Child</h2>
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="edit-child-name"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Name
+            </label>
+            <input
+              id="edit-child-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Child's name"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="edit-child-age"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Age
+            </label>
+            <input
+              id="edit-child-age"
+              type="number"
+              min={1}
+              max={10}
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder="Age (1–10)"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="edit-child-classroom"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Classroom
+            </label>
+            <input
+              id="edit-child-classroom"
+              type="text"
+              value={classroom}
+              onChange={(e) => setClassroom(e.target.value)}
+              placeholder="e.g. Sunflower"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="edit-child-notes"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Notes
+            </label>
+            <textarea
+              id="edit-child-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Allergies, nap schedule, special needs…"
+              rows={3}
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-error mt-3">{error}</p>}
+
+        {/* Delete button */}
+        <button
+          onClick={handleDelete}
+          disabled={deleting || submitting}
+          className="w-full mt-5 border border-error/40 text-error px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-error-container transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <span className="material-symbols-outlined text-[16px]">delete</span>
+          {deleting ? "Deleting…" : `Delete ${child.name}`}
+        </button>
+
+        <div className="mt-3 flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={submitting || deleting}
+            className="flex-1 border border-outline-variant/40 text-on-surface-variant px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-surface-container transition-all disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || deleting}
+            className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary px-4 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {submitting ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -276,18 +446,28 @@ function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
 
 const aiSuggestions = [
   {
+    teacherId: "t1",
     initials: "CH",
     shortName: "Ms. Clara",
     name: "Ms. Clara H.",
+    classroom: "Sunshine",
     role: "Sunshine Room Lead",
+    availability: [
+      { start_date: "2026-06-16", end_date: "2026-06-20", start_time: "09:00", end_time: "17:00" },
+    ],
     reasoning:
       "Ms. Clara is Leo's primary teacher. She's already familiar with his afternoon routine and specific snack requirements.",
   },
   {
+    teacherId: "t2",
     initials: "EV",
     shortName: "Ms. Elena",
     name: "Ms. Elena V.",
+    classroom: "Little Sprouts",
     role: "Little Sprouts Asst.",
+    availability: [
+      { start_date: "2026-06-23", end_date: "2026-06-27", start_time: "08:00", end_time: "15:00" },
+    ],
     reasoning:
       "Maya responds exceptionally well to Elena during morning play. Elena is certified in infant CPR and first aid.",
   },
@@ -303,6 +483,7 @@ export default function DashboardPage() {
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [children, setChildren] = useState<ChildData[]>([]);
   const [bookings, setBookings] = useState<BookingData[]>([]);
+  const [editingChild, setEditingChild] = useState<ChildData | null>(null);
 
   useEffect(() => {
     fetch("/api/children")
@@ -330,15 +511,16 @@ export default function DashboardPage() {
     router.push(`/search?${params.toString()}`);
   };
 
-  const handleDeleteChild = async (id: string) => {
-    const res = await fetch(`/api/children/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setChildren((prev) => prev.filter((c) => c.id !== id));
-    }
-  };
-
   const handleChildAdded = (child: ChildData) => {
     setChildren((prev) => [...prev, child]);
+  };
+
+  const handleChildUpdated = (updated: ChildData) => {
+    setChildren((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
+
+  const handleChildDeleted = (id: string) => {
+    setChildren((prev) => prev.filter((c) => c.id !== id));
   };
 
   return (
@@ -346,82 +528,82 @@ export default function DashboardPage() {
       <Navbar />
       <div className="bg-background min-h-screen pt-16 pb-24 md:pb-8">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
-          <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+          {/* Page header */}
+          <div>
+            <h1 className="text-3xl font-bold text-on-surface">Welcome back, Patricia!</h1>
+            <p className="text-on-surface-variant mt-1">
+              Find trusted teachers for your child during school breaks.
+            </p>
+          </div>
+
+          {/* Search bar card — full width */}
+          <div className="mt-8 bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/20">
+            <p className="text-sm font-bold uppercase tracking-wider text-on-surface-variant mb-4">
+              Find Available Teachers
+            </p>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="search-date-from"
+                  className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+                >
+                  Date From
+                </label>
+                <input
+                  id="search-date-from"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="search-date-to"
+                  className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+                >
+                  Date To
+                </label>
+                <input
+                  id="search-date-to"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                  Classroom
+                </label>
+                <select
+                  value={classroom}
+                  onChange={(e) => setClassroom(e.target.value)}
+                  className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option>All Classrooms</option>
+                  <option>Sunflower</option>
+                  <option>Butterfly</option>
+                  <option>Rainbow</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={handleSearch}
+                className="w-full md:w-auto bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-xl font-bold text-sm shadow-md hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">search</span>
+                Search Teachers
+              </button>
+            </div>
+          </div>
+
+          <div className="lg:grid lg:grid-cols-3 lg:gap-8 mt-10">
             {/* Main content */}
             <div className="lg:col-span-2">
-              {/* Page header */}
-              <div>
-                <h1 className="text-3xl font-bold text-on-surface">Welcome back, Patricia!</h1>
-                <p className="text-on-surface-variant mt-1">
-                  Find trusted teachers for your child during school breaks.
-                </p>
-              </div>
-
-              {/* Search bar card */}
-              <div className="mt-8 bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/20">
-                <p className="text-sm font-bold uppercase tracking-wider text-on-surface-variant mb-4">
-                  Find Available Teachers
-                </p>
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="search-date-from"
-                      className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
-                    >
-                      Date From
-                    </label>
-                    <input
-                      id="search-date-from"
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                      className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="search-date-to"
-                      className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
-                    >
-                      Date To
-                    </label>
-                    <input
-                      id="search-date-to"
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
-                      className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                      Classroom
-                    </label>
-                    <select
-                      value={classroom}
-                      onChange={(e) => setClassroom(e.target.value)}
-                      className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    >
-                      <option>All Classrooms</option>
-                      <option>Sunflower</option>
-                      <option>Butterfly</option>
-                      <option>Rainbow</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={handleSearch}
-                    className="w-full md:w-auto bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-xl font-bold text-sm shadow-md hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">search</span>
-                    Search Teachers
-                  </button>
-                </div>
-              </div>
-
               {/* My Children section */}
-              <div className="mt-10">
+              <div>
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-on-surface">My Children</h2>
                   <button
@@ -442,7 +624,7 @@ export default function DashboardPage() {
                         key={child.id}
                         className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm"
                       >
-                        {/* Avatar + name/age + delete */}
+                        {/* Avatar + name/age + edit */}
                         <div className="flex items-start gap-3 mb-4">
                           <div className="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-2xl flex-shrink-0">
                             {child.name.charAt(0).toUpperCase()}
@@ -456,11 +638,11 @@ export default function DashboardPage() {
                             </p>
                           </div>
                           <button
-                            onClick={() => handleDeleteChild(child.id)}
-                            aria-label={`Delete ${child.name}`}
-                            className="p-1.5 rounded-full text-on-surface-variant hover:bg-error-container hover:text-error transition-all flex-shrink-0"
+                            onClick={() => setEditingChild(child)}
+                            aria-label={`Edit ${child.name}`}
+                            className="p-1.5 rounded-full text-on-surface-variant hover:bg-primary-fixed hover:text-primary transition-all flex-shrink-0"
                           >
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
                           </button>
                         </div>
 
@@ -595,13 +777,19 @@ export default function DashboardPage() {
                       {/* Actions */}
                       <div className="flex flex-col gap-2">
                         <button
-                          onClick={() => router.push("/search")}
+                          onClick={() =>
+                            router.push(
+                              `/bookings/new?teacher_id=${encodeURIComponent(teacher.teacherId)}&teacher_name=${encodeURIComponent(teacher.name)}&classroom=${encodeURIComponent(teacher.classroom)}&availability=${encodeURIComponent(JSON.stringify(teacher.availability))}`
+                            )
+                          }
                           className="w-full bg-on-surface text-surface py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all"
                         >
                           Request {teacher.shortName}
                         </button>
                         <button
-                          onClick={() => router.push("/search")}
+                          onClick={() =>
+                            router.push(`/search?name=${encodeURIComponent(teacher.name)}`)
+                          }
                           className="w-full border border-primary text-primary py-2.5 rounded-xl text-sm font-bold hover:bg-primary-fixed/20 transition-all"
                         >
                           View Profile
@@ -620,6 +808,15 @@ export default function DashboardPage() {
 
       {showAddChildModal && (
         <AddChildModal onClose={() => setShowAddChildModal(false)} onAdd={handleChildAdded} />
+      )}
+
+      {editingChild && (
+        <EditChildModal
+          child={editingChild}
+          onClose={() => setEditingChild(null)}
+          onUpdate={handleChildUpdated}
+          onDelete={handleChildDeleted}
+        />
       )}
     </>
   );

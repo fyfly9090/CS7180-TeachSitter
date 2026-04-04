@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -51,15 +52,13 @@ function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <button
-            className="p-2 rounded-full hover:bg-surface-container transition-colors"
-            aria-label="Notifications"
+          <Link
+            href="/dashboard"
+            className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none hover:opacity-80 transition-opacity"
+            aria-label="Go to dashboard"
           >
-            <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
-          </button>
-          <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
             P
-          </div>
+          </Link>
         </div>
       </div>
     </header>
@@ -99,6 +98,178 @@ function MobileBottomNav() {
         })}
       </div>
     </nav>
+  );
+}
+
+// ── EditChildModal ─────────────────────────────────────────────────────────────
+
+interface EditChildModalProps {
+  child: ChildData;
+  onClose: () => void;
+  onUpdate: (child: ChildData) => void;
+  onDelete: (id: string) => void;
+}
+
+function EditChildModal({ child, onClose, onUpdate, onDelete }: EditChildModalProps) {
+  const [name, setName] = useState(child.name);
+  const [age, setAge] = useState(String(child.age));
+  const [classroom, setClassroom] = useState(child.classroom);
+  const [notes, setNotes] = useState(child.notes ?? "");
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !classroom.trim() || !age) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/children/${child.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          classroom: classroom.trim(),
+          age: Number(age),
+          notes: notes.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error?.message ?? "Failed to update child");
+        return;
+      }
+      onUpdate(data.child);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    const res = await fetch(`/api/children/${child.id}`, { method: "DELETE" });
+    if (res.ok) {
+      onDelete(child.id);
+      onClose();
+    } else {
+      setError("Failed to delete child");
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Edit Child"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+    >
+      <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm shadow-xl border border-outline-variant/20">
+        <h2 className="text-lg font-bold text-on-surface mb-5">Edit Child</h2>
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="edit-child-name"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Name
+            </label>
+            <input
+              id="edit-child-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Child's name"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="edit-child-age"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Age
+            </label>
+            <input
+              id="edit-child-age"
+              type="number"
+              min={1}
+              max={10}
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder="Age (1–10)"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="edit-child-classroom"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Classroom
+            </label>
+            <input
+              id="edit-child-classroom"
+              type="text"
+              value={classroom}
+              onChange={(e) => setClassroom(e.target.value)}
+              placeholder="e.g. Sunflower"
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="edit-child-notes"
+              className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Notes
+            </label>
+            <textarea
+              id="edit-child-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Allergies, nap schedule, special needs…"
+              rows={3}
+              className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-error mt-3">{error}</p>}
+
+        {/* Delete button */}
+        <button
+          onClick={handleDelete}
+          disabled={deleting || submitting}
+          className="w-full mt-5 border border-error/40 text-error px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-error-container transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <span className="material-symbols-outlined text-[16px]">delete</span>
+          {deleting ? "Deleting…" : `Delete ${child.name}`}
+        </button>
+
+        <div className="mt-3 flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={submitting || deleting}
+            className="flex-1 border border-outline-variant/40 text-on-surface-variant px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-surface-container transition-all disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || deleting}
+            className="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary px-4 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {submitting ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -252,11 +423,25 @@ function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
 // ── ProfilePage ────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [children, setChildren] = useState<ChildData[]>([]);
-  const [currentPassword, setCurrentPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [editingChild, setEditingChild] = useState<ChildData | null>(null);
+  const [saveToast, setSaveToast] = useState<{ type: "success" | "error"; message: string } | null>(
+    null
+  );
+
+  // Load current user email from Supabase on mount
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setEmail(data.user.email);
+    });
+  }, []);
 
   // Load children from API on mount
   useEffect(() => {
@@ -268,32 +453,38 @@ export default function ProfilePage() {
       .catch(() => {});
   }, []);
 
-  const handleDeleteChild = async (id: string) => {
-    const res = await fetch(`/api/children/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setChildren((prev) => prev.filter((c) => c.id !== id));
-    }
-  };
-
   const handleChildAdded = (child: ChildData) => {
     setChildren((prev) => [...prev, child]);
   };
 
+  const handleChildUpdated = (updated: ChildData) => {
+    setChildren((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
+
+  const handleChildDeleted = (id: string) => {
+    setChildren((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const showToast = (type: "success" | "error", message: string) => {
+    setSaveToast({ type, message });
+    setTimeout(() => setSaveToast(null), 3000);
+  };
+
   const handleSaveChanges = () => {
-    if (!newPassword && !currentPassword) return;
-
-    if (newPassword.length > 0 && newPassword.length < 8) {
+    if (showChangePassword && newPassword.length > 0 && newPassword.length < 8) {
       setPasswordError("Password must be at least 8 characters");
+      showToast("error", "Password must be at least 8 characters.");
       return;
     }
-
-    if (newPassword && !currentPassword) {
-      setPasswordError("Current password is required");
-      return;
-    }
-
     setPasswordError(null);
-    // In production this would call /api/auth/update-password
+    // In production this would call /api/auth/update-password and /api/auth/update-email
+    showToast("success", "Changes saved successfully.");
+  };
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
   };
 
   return (
@@ -301,38 +492,28 @@ export default function ProfilePage() {
       <Navbar />
       <div className="pt-16 pb-24 md:pb-8 bg-background min-h-screen">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
-          {/* Profile header card */}
-          <div className="bg-surface-container-lowest rounded-2xl p-6 mb-6 border border-outline-variant/20 shadow-sm">
-            <div className="flex items-center gap-5 flex-wrap">
-              <div className="w-20 h-20 rounded-2xl bg-primary-fixed flex items-center justify-center text-primary font-bold text-3xl flex-shrink-0">
-                PJ
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-on-surface">Patricia Johnson</h1>
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-                    school
-                  </span>
-                  <span className="text-sm text-on-surface-variant">Sunshine Preschool</span>
-                </div>
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-                    person
-                  </span>
-                  <span className="text-sm text-on-surface-variant font-medium">Parent</span>
-                </div>
-              </div>
-              <button className="border border-outline-variant/30 text-primary px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary-fixed/20 transition-all ml-auto flex-shrink-0">
-                Edit Profile
-              </button>
-            </div>
+          {/* Profile header */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-on-surface">Patricia Johnson</h1>
+            <p className="text-on-surface-variant mt-1">
+              Managing family care and educational enrichment at Sunshine Preschool.
+            </p>
           </div>
 
           {/* Main grid */}
           <div className="lg:grid lg:grid-cols-3 lg:gap-8 mt-2">
             {/* Main column: My Children */}
             <div className="lg:col-span-2">
-              <h2 className="text-xl font-bold text-on-surface mb-4">My Children</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-on-surface">My Children</h2>
+                <button
+                  onClick={() => setShowAddChildModal(true)}
+                  className="text-primary text-sm font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                  Add Child
+                </button>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 {children.map((child) => (
@@ -340,7 +521,7 @@ export default function ProfilePage() {
                     key={child.id}
                     className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm"
                   >
-                    {/* Avatar + name/age + delete */}
+                    {/* Avatar + name/age + edit */}
                     <div className="flex items-start gap-3 mb-4">
                       <div className="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-2xl flex-shrink-0">
                         {child.name.charAt(0).toUpperCase()}
@@ -354,11 +535,11 @@ export default function ProfilePage() {
                         </p>
                       </div>
                       <button
-                        onClick={() => handleDeleteChild(child.id)}
-                        aria-label={`Delete ${child.name}`}
-                        className="p-1.5 rounded-full text-on-surface-variant hover:bg-error-container hover:text-error transition-all flex-shrink-0"
+                        onClick={() => setEditingChild(child)}
+                        aria-label={`Edit ${child.name}`}
+                        className="p-1.5 rounded-full text-on-surface-variant hover:bg-primary-fixed hover:text-primary transition-all flex-shrink-0"
                       >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                        <span className="material-symbols-outlined text-[16px]">edit</span>
                       </button>
                     </div>
 
@@ -379,85 +560,101 @@ export default function ProfilePage() {
                         <span>{child.notes}</span>
                       </div>
                     )}
-
-                    <button className="text-xs text-primary font-semibold mt-3 hover:opacity-80 transition-opacity block">
-                      Edit
-                    </button>
                   </div>
                 ))}
               </div>
-
-              {/* Add a Child button */}
-              <button
-                onClick={() => setShowAddChildModal(true)}
-                className="mt-4 w-full border-2 border-dashed border-outline-variant/40 rounded-2xl py-5 text-primary font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary-fixed/20 transition-all"
-              >
-                <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                Add a Child
-              </button>
             </div>
 
             {/* Sidebar: Account Settings */}
             <div className="lg:col-span-1 mt-8 lg:mt-0">
               <div className="sticky top-24 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm">
-                <h2 className="text-base font-bold text-on-surface mb-4">Account Settings</h2>
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-5">
+                  <span className="material-symbols-outlined text-primary text-[22px]">
+                    manage_accounts
+                  </span>
+                  <h2 className="text-lg font-bold text-on-surface">Account Settings</h2>
+                </div>
 
-                {/* Email display */}
+                {/* Email Address */}
                 <div className="flex flex-col gap-1.5 mb-4">
-                  <label
-                    htmlFor="profile-email"
-                    className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider"
-                  >
-                    Email
+                  <label htmlFor="profile-email" className="text-xs text-on-surface-variant">
+                    Email Address
                   </label>
                   <input
                     id="profile-email"
                     type="email"
-                    value="patricia@example.com"
-                    disabled
-                    className="w-full rounded-xl border border-outline-variant/30 bg-surface-container px-3 py-2.5 text-sm text-on-surface-variant cursor-not-allowed"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
 
-                {/* Password change */}
-                <div className="flex flex-col gap-3">
-                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                    Change Password
-                  </p>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="current-password" className="text-xs text-on-surface-variant">
-                      Current Password
-                    </label>
+                {/* Password row */}
+                <div className="flex flex-col gap-1.5 mb-4">
+                  <label htmlFor="profile-password" className="text-xs text-on-surface-variant">
+                    Password
+                  </label>
+                  <div className="flex items-center gap-2 rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5">
                     <input
-                      id="current-password"
+                      id="profile-password"
                       type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      value={showChangePassword ? newPassword : "••••••••••••"}
+                      onChange={(e) => {
+                        if (showChangePassword) setNewPassword(e.target.value);
+                      }}
+                      readOnly={!showChangePassword}
+                      placeholder={showChangePassword ? "New password" : undefined}
+                      className="flex-1 text-sm text-on-surface bg-transparent focus:outline-none"
                     />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowChangePassword((v) => !v);
+                        setNewPassword("");
+                        setPasswordError(null);
+                      }}
+                      className="text-xs font-bold text-primary uppercase tracking-wider hover:opacity-70 transition-opacity flex-shrink-0"
+                    >
+                      {showChangePassword ? "Cancel" : "Change"}
+                    </button>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="new-password" className="text-xs text-on-surface-variant">
-                      New Password
-                    </label>
-                    <input
-                      id="new-password"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
+                  {showChangePassword && (
+                    <p className="text-xs text-on-surface-variant">
+                      Enter a new password (min 8 characters)
+                    </p>
+                  )}
                   {passwordError && <p className="text-xs text-error">{passwordError}</p>}
                 </div>
 
                 <button
                   onClick={handleSaveChanges}
-                  className="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary py-3 rounded-xl font-bold text-sm mt-4 hover:opacity-90 active:scale-95 transition-all"
+                  className="w-full bg-primary text-on-primary py-3 rounded-xl font-bold text-sm mt-1 hover:opacity-90 active:scale-95 transition-all"
                 >
                   Save Changes
+                </button>
+
+                {saveToast && (
+                  <div
+                    className={`mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                      saveToast.type === "success"
+                        ? "bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-primary"
+                        : "bg-[color-mix(in_srgb,var(--color-error)_12%,transparent)] text-error"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      {saveToast.type === "success" ? "check_circle" : "error"}
+                    </span>
+                    {saveToast.message}
+                  </div>
+                )}
+
+                {/* Sign Out */}
+                <button
+                  onClick={handleSignOut}
+                  className="w-full mt-4 text-sm font-bold text-error hover:opacity-70 transition-opacity"
+                >
+                  Sign Out
                 </button>
               </div>
             </div>
@@ -469,6 +666,15 @@ export default function ProfilePage() {
 
       {showAddChildModal && (
         <AddChildModal onClose={() => setShowAddChildModal(false)} onAdd={handleChildAdded} />
+      )}
+
+      {editingChild && (
+        <EditChildModal
+          child={editingChild}
+          onClose={() => setEditingChild(null)}
+          onUpdate={handleChildUpdated}
+          onDelete={handleChildDeleted}
+        />
       )}
     </>
   );

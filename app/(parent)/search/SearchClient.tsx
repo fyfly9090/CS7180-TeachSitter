@@ -91,21 +91,13 @@ function Navbar() {
           })}
         </div>
         <div className="flex items-center gap-4">
-          <button
-            className="p-2 text-slate-600 hover:bg-orange-100 rounded-full transition-colors"
-            aria-label="Notifications"
+          <Link
+            href="/dashboard"
+            className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-sm select-none border border-outline-variant/15 hover:opacity-80 transition-opacity"
+            aria-label="Go to dashboard"
           >
-            <span className="material-symbols-outlined">notifications</span>
-          </button>
-          <button
-            className="p-2 text-slate-600 hover:bg-orange-100 rounded-full transition-colors"
-            aria-label="Messages"
-          >
-            <span className="material-symbols-outlined">chat_bubble</span>
-          </button>
-          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-sm select-none border border-outline-variant/15">
             P
-          </div>
+          </Link>
         </div>
       </div>
     </nav>
