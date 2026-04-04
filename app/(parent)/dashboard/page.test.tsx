@@ -523,11 +523,13 @@ describe("DashboardPage — Quick Match AI sidebar", () => {
     expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("availability="));
   });
 
-  it("View Profile button navigates to /search with teacher name filter", async () => {
+  it("View Profile button navigates to /teachers/:id", async () => {
     render(<DashboardPage />);
     await waitFor(() => screen.getAllByRole("button", { name: /view profile/i }));
     fireEvent.click(screen.getAllByRole("button", { name: /view profile/i })[0]);
-    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/search?name="));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringContaining(`/teachers/${AI_TEACHERS[0].id}`)
+    );
   });
 });
 

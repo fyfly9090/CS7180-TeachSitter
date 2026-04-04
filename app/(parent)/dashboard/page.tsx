@@ -843,7 +843,7 @@ export default function DashboardPage() {
                           </button>
                           <button
                             onClick={() =>
-                              router.push(`/search?name=${encodeURIComponent(teacher.name)}`)
+                              router.push(`/teachers/${encodeURIComponent(teacher.teacherId)}`)
                             }
                             className="w-full border border-primary text-primary py-2.5 rounded-xl text-sm font-bold hover:bg-primary-fixed/20 transition-all"
                           >
