@@ -311,9 +311,12 @@ function TeacherCard({
           >
             Book {firstName}
           </Link>
-          <button className="px-6 py-3 border border-outline-variant/30 text-primary font-bold rounded-xl hover:bg-surface-container-low transition-colors">
+          <Link
+            href={`/teachers/${encodeURIComponent(teacher.id)}`}
+            className="px-6 py-3 border border-outline-variant/30 text-primary font-bold rounded-xl hover:bg-surface-container-low transition-colors text-center"
+          >
             View Profile
-          </button>
+          </Link>
         </div>
       </div>
     </article>
