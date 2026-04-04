@@ -92,10 +92,10 @@ describe.skipIf(!canRun)("RLS smoke tests", () => {
     // Ensure profiles exist (trigger fires on auth.users insert, but belt+suspenders)
     await admin.from("profiles").upsert(
       [
-        { id: parentAId, email: parentAEmail, role: "parent" },
-        { id: parentBId, email: parentBEmail, role: "parent" },
-        { id: teacherAId, email: teacherAEmail, role: "teacher" },
-        { id: teacherBId, email: teacherBEmail, role: "teacher" },
+        { id: parentAId, email: parentAEmail, role: "parent", full_name: null },
+        { id: parentBId, email: parentBEmail, role: "parent", full_name: null },
+        { id: teacherAId, email: teacherAEmail, role: "teacher", full_name: null },
+        { id: teacherBId, email: teacherBEmail, role: "teacher", full_name: null },
       ],
       { onConflict: "id", ignoreDuplicates: true }
     );
@@ -103,7 +103,14 @@ describe.skipIf(!canRun)("RLS smoke tests", () => {
     // Insert teacher profiles via service role (bypasses RLS)
     const { data: tAProfile, error: tAProfileErr } = await admin
       .from("teachers")
-      .insert({ user_id: teacherAId, classroom: "Sunflower", bio: "Teacher A bio" })
+      .insert({
+        user_id: teacherAId,
+        classroom: "Sunflower",
+        bio: "Teacher A bio",
+        full_name: null,
+        hourly_rate: null,
+        position: null,
+      })
       .select("id")
       .single();
     if (tAProfileErr) throw tAProfileErr;
@@ -111,7 +118,14 @@ describe.skipIf(!canRun)("RLS smoke tests", () => {
 
     const { data: tBProfile, error: tBProfileErr } = await admin
       .from("teachers")
-      .insert({ user_id: teacherBId, classroom: "Rose", bio: "Teacher B bio" })
+      .insert({
+        user_id: teacherBId,
+        classroom: "Rose",
+        bio: "Teacher B bio",
+        full_name: null,
+        hourly_rate: null,
+        position: null,
+      })
       .select("id")
       .single();
     if (tBProfileErr) throw tBProfileErr;

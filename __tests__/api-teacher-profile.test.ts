@@ -379,10 +379,16 @@ describe("GET /api/teachers/me — auth & role", () => {
 describe("GET /api/teachers/me — data", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  test("returns 404 when teacher profile does not exist", async () => {
-    mockSupabase(TEACHER_USER, [{ data: null, error: { code: "PGRST116", message: "Not found" } }]);
+  test("returns 200 with auto-created teacher when profile does not exist", async () => {
+    mockSupabase(TEACHER_USER, [
+      { data: null, error: { code: "PGRST116", message: "Not found" } },
+      {
+        data: { id: "new-teacher-id", user_id: "teacher-uuid", classroom: "", bio: "" },
+        error: null,
+      },
+    ]);
     const res = await GET(makeGetRequest());
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
   });
 
   test("returns 200 with teacher and availability on success", async () => {

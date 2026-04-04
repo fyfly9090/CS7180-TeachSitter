@@ -352,18 +352,18 @@ describe("PATCH /api/bookings/[id] — business logic", () => {
     expect(res.status).toBe(404);
   });
 
-  test("returns 409 when booking is already confirmed", async () => {
+  test("allows declining (cancelling) an already confirmed booking", async () => {
     const alreadyConfirmed = { ...BOOKING_ROW, status: "confirmed" };
     mockSupabase(TEACHER_USER, [
       { data: TEACHER_ROW, error: null },
       { data: alreadyConfirmed, error: null },
+      { data: { id: BOOKING_ID, status: "declined" }, error: null },
+      { data: null, error: null },
     ]);
     const res = await PATCH(makePatchRequest(BOOKING_ID, { status: "declined" }), {
       params: Promise.resolve({ id: BOOKING_ID }),
     });
-    expect(res.status).toBe(409);
-    const body = await res.json();
-    expect(body.error.code).toBe("CONFLICT");
+    expect(res.status).toBe(200);
   });
 
   test("returns 409 when booking is already declined", async () => {

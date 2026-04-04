@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { formatDateRange } from "@/lib/utils/format";
-import type { BookingWithParent, Teacher } from "@/types";
+import type { BookingWithParent, Teacher, Availability } from "@/types";
 
 export default function TeacherDashboardPage() {
   const [teacherName, setTeacherName] = useState("Teacher");
+  const [hasProfile, setHasProfile] = useState(false);
   const [confirmed, setConfirmed] = useState<BookingWithParent[]>([]);
   const [pending, setPending] = useState<BookingWithParent[]>([]);
+  const [availability, setAvailability] = useState<Availability[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -19,14 +21,19 @@ export default function TeacherDashboardPage() {
     ])
       .then(([meData, bookingsData]) => {
         if (meData?.teacher) {
-          setTeacherName((meData.teacher as Teacher).full_name ?? "Teacher");
+          const teacher = meData.teacher as Teacher;
+          setTeacherName(teacher.full_name ?? "Teacher");
+          setHasProfile(true);
+          setAvailability((meData.availability as Availability[]) ?? []);
+        } else if (meData?.user_name) {
+          // New teacher without a teacher profile yet — use auth name
+          setTeacherName(meData.user_name as string);
         }
         if (bookingsData) {
           setConfirmed((bookingsData as { confirmed: BookingWithParent[] }).confirmed ?? []);
           setPending((bookingsData as { pending: BookingWithParent[] }).pending ?? []);
-        } else {
-          setError("Unable to load bookings.");
         }
+        // No error for missing bookings — new teachers won't have any
       })
       .catch(() => {
         setError("Unable to load dashboard data.");
@@ -176,6 +183,53 @@ export default function TeacherDashboardPage() {
                   <p className="text-sm text-on-surface-variant">
                     Reminder: Confirm or decline requests within 48 hours so parents can plan ahead.
                   </p>
+                </div>
+
+                {/* Availability Section */}
+                <div className="mt-8">
+                  <h2 className="text-xl font-bold text-on-surface mb-4">My Availability</h2>
+
+                  {availability.length > 0 ? (
+                    <div className="flex flex-col gap-2 mb-4">
+                      {availability.map((a) => (
+                        <div
+                          key={a.id}
+                          className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20 shadow-sm flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary text-lg">
+                              date_range
+                            </span>
+                            <span className="text-sm text-on-surface">
+                              {formatDateRange(a.start_date, a.end_date)}
+                            </span>
+                            {a.is_booked && (
+                              <span className="bg-secondary text-on-secondary text-xs px-2 py-0.5 rounded-full font-bold">
+                                Booked
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-on-surface-variant mb-4">
+                      No availability posted yet.
+                    </p>
+                  )}
+
+                  <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/10 text-center">
+                    <p className="text-sm text-on-surface-variant">
+                      Manage your availability on the{" "}
+                      <a
+                        href="/teacher/setup"
+                        className="text-primary font-semibold hover:underline"
+                      >
+                        My Profile
+                      </a>{" "}
+                      page.
+                    </p>
+                  </div>
                 </div>
               </div>
 

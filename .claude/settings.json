@@ -35,8 +35,57 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CMD=$(jq -r '.tool_input.command // \"\"'); if echo \"$CMD\" | grep -q 'git push'; then if ! npm run lint 1>&2; then printf '{\"continue\":false,\"stopReason\":\"Lint failed — fix errors before pushing.\"}'; exit 1; fi; if ! npm run test 1>&2; then printf '{\"continue\":false,\"stopReason\":\"Tests failed — fix errors before pushing.\"}'; exit 1; fi; if ! npm run build 1>&2; then printf '{\"continue\":false,\"stopReason\":\"Build failed — fix errors before pushing.\"}'; exit 1; fi; fi",
-            "timeout": 300
+            "command": "if echo \"$TOOL_INPUT\" | grep -q 'git push'; then npm run lint 1>&2 && npm run test 1>&2 && npm run build 1>&2 || { printf '{\"continue\":false,\"stopReason\":\"Pre-push checks failed. Fix lint/test/build errors before pushing.\"}'; exit 1; }; fi",
+            "if": "Bash(git push *)",
+            "timeout": 300,
+            "statusMessage": "Running pre-push checks (lint, test, build)..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$TOOL_INPUT\" | grep -o '\"file_path\":\"[^\"]*\"' | head -1 | sed 's/\"file_path\":\"//;s/\"//'); for p in .env .env.local .env.production 001_init.sql 002_rls.sql; do if echo \"$FILE\" | grep -q \"$p\"; then printf '{\"continue\":false,\"stopReason\":\"BLOCKED: %s is a protected file.\"}' \"$p\"; exit 1; fi; done",
+            "timeout": 5,
+            "statusMessage": "Checking protected files..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$TOOL_INPUT\" | grep -o '\"file_path\":\"[^\"]*\"' | head -1 | sed 's/\"file_path\":\"//;s/\"//'); if echo \"$FILE\" | grep -qE '\\.env$|\\.env\\.local$|\\.env\\.production$'; then printf '{\"continue\":false,\"stopReason\":\"BLOCKED: Cannot write environment files. Secrets must never be committed.\"}'; exit 1; fi",
+            "timeout": 5,
+            "statusMessage": "Checking for secret files..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$TOOL_INPUT\" | grep -o '\"file_path\":\"[^\"]*\"' | head -1 | sed 's/\"file_path\":\"//;s/\"//'); if echo \"$FILE\" | grep -qE '\\.(ts|tsx|js|jsx)$'; then npx prettier --write \"$FILE\" 2>/dev/null 1>&2; fi",
+            "timeout": 15,
+            "statusMessage": "Auto-formatting with Prettier..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run test -- --run 2>&1 | tail -5; EXIT=$?; if [ $EXIT -ne 0 ]; then printf 'WARNING: Some tests are failing. Run npm run test to see details.'; fi",
+            "timeout": 120,
+            "statusMessage": "Running test suite as quality check..."
           }
         ]
       }

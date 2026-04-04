@@ -61,6 +61,7 @@ export default function SignupPage() {
           email: form.email,
           password: form.password,
           role: form.role,
+          name: form.name,
         }),
       });
 
@@ -69,6 +70,19 @@ export default function SignupPage() {
       if (!res.ok) {
         set("error", data.error?.message ?? "Signup failed. Please try again.");
         set("loading", false);
+        return;
+      }
+
+      // Auto-login after successful signup
+      const loginRes = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email, password: form.password }),
+      });
+
+      if (!loginRes.ok) {
+        // Signup succeeded but auto-login failed — send to login page
+        router.push("/login");
         return;
       }
 

@@ -22,7 +22,37 @@ export const GET = withApiHandler(async () => {
     .eq("user_id", user.id)
     .single();
 
-  if (teacherError || !teacher) throw errors.notFound("Teacher profile not found");
+  if (teacherError || !teacher) {
+    // New teacher — auto-create a teacher row so setup page can save
+    const fullName = (user.user_metadata.full_name as string) || "";
+    const { data: newTeacher, error: createError } = await supabase
+      .from("teachers")
+      .insert({
+        user_id: user.id,
+        classroom: "",
+        bio: "",
+        full_name: fullName || null,
+        hourly_rate: null,
+        position: null,
+      })
+      .select()
+      .single();
+
+    if (createError || !newTeacher) {
+      // Insert failed — maybe RLS or constraint; return gracefully
+      return NextResponse.json({
+        teacher: null,
+        availability: [],
+        user_name: fullName || "Teacher",
+      });
+    }
+
+    return NextResponse.json({
+      teacher: newTeacher as unknown as Teacher,
+      availability: [],
+      user_name: fullName || "Teacher",
+    });
+  }
 
   // Fetch availability rows for this teacher
   const { data: availability, error: availError } = await supabase

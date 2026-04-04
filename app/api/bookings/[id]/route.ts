@@ -57,9 +57,13 @@ export const PATCH = withApiHandler(async (req: Request, ctx: unknown) => {
       throw errors.forbidden();
     }
 
-    // Only pending bookings can be confirmed or declined
-    if (typedBooking.status !== "pending") {
-      throw errors.conflict(`Booking is already ${typedBooking.status}`);
+    // Pending bookings can be confirmed or declined
+    // Confirmed bookings can be declined (cancelled by teacher)
+    if (typedBooking.status === "declined") {
+      throw errors.conflict("Booking is already declined");
+    }
+    if (typedBooking.status === "confirmed" && status === "confirmed") {
+      throw errors.conflict("Booking is already confirmed");
     }
 
     // Update status
@@ -77,6 +81,16 @@ export const PATCH = withApiHandler(async (req: Request, ctx: unknown) => {
       await supabase
         .from("availability")
         .update({ is_booked: true })
+        .eq("teacher_id", typedBooking.teacher_id)
+        .lte("start_date", typedBooking.start_date)
+        .gte("end_date", typedBooking.end_date);
+    }
+
+    // Side effect: release availability when cancelling a confirmed booking
+    if (status === "declined" && typedBooking.status === "confirmed") {
+      await supabase
+        .from("availability")
+        .update({ is_booked: false })
         .eq("teacher_id", typedBooking.teacher_id)
         .lte("start_date", typedBooking.start_date)
         .gte("end_date", typedBooking.end_date);

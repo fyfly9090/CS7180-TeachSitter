@@ -49,7 +49,7 @@ export default function LoginPage() {
       const data: LoginApiResponse = await res.json();
 
       if (!res.ok) {
-        set("error", data.error?.message ?? "Invalid email or password.");
+        set("error", data.error?.message ?? "The Email or Password doesn't match our records.");
         set("loading", false);
         return;
       }
