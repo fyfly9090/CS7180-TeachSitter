@@ -36,19 +36,19 @@ npm run test:coverage                 # Coverage report (target >80%)
 
 ## Tech Stack
 
-| Layer            | Technology                                                     | Docs                                                                                                               |
-| ---------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Frontend         | Next.js 15+ (App Router), React 19, Tailwind CSS v4, Shadcn UI | [Next.js](https://nextjs.org/docs) · [Tailwind v4](https://tailwindcss.com/docs) · [Shadcn](https://ui.shadcn.com) |
-| Backend          | Node.js via Next.js API Routes (Node runtime only — no Edge)   | —                                                                                                                  |
-| Database & Auth  | Supabase (PostgreSQL, RLS, Email + Password)                   | [Supabase](https://supabase.com/docs)                                                                              |
-| Caching          | Redis — `/api/teachers/available` only, not primary store      | [ioredis](https://github.com/redis/ioredis)                                                                        |
-| AI/Matching      | Gemini 1.5 Pro + Claude 3.5 Sonnet (parallel agents)           | [Gemini SDK](https://ai.google.dev/gemini-api/docs) · [Anthropic SDK](https://docs.anthropic.com)                  |
-| Testing          | Vitest + Playwright + fast-check                               | [Vitest](https://vitest.dev) · [Playwright](https://playwright.dev) · [fast-check](https://fast-check.dev)         |
-| CI/CD            | GitHub Actions → Vercel                                        | [Actions](https://docs.github.com/en/actions)                                                                      |
-| Monitoring       | Sentry (errors + APM)                                          | [Sentry](https://docs.sentry.io)                                                                                   |
-| Security (CI)    | CodeQL (SAST), Snyk (SCA), OWASP ZAP (DAST)                    | [CodeQL](https://codeql.github.com) · [Snyk](https://snyk.io) · [ZAP](https://www.zaproxy.org)                     |
-| Security (local) | eslint-plugin-security (pre-commit via lint-staged)            | [plugin](https://github.com/eslint-community/eslint-plugin-security)                                               |
-| Git hooks        | Husky + lint-staged                                            | [Husky](https://typicode.github.io/husky) · [lint-staged](https://github.com/lint-staged/lint-staged)              |
+| Layer            | Technology                                                     | Docs                                                                                                                              |
+| ---------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend         | Next.js 15+ (App Router), React 19, Tailwind CSS v4, Shadcn UI | [Next.js](https://nextjs.org/docs) · [Tailwind v4](https://tailwindcss.com/docs) · [Shadcn](https://ui.shadcn.com)                |
+| Backend          | Node.js via Next.js API Routes (Node runtime only — no Edge)   | —                                                                                                                                 |
+| Database & Auth  | Supabase (PostgreSQL, RLS, Email + Password)                   | [Supabase](https://supabase.com/docs)                                                                                             |
+| Caching          | Redis — `/api/teachers/available` only, not primary store      | [ioredis](https://github.com/redis/ioredis)                                                                                       |
+| AI/Matching      | Gemini 1.5 Pro + Claude 3.5 Sonnet (parallel agents)           | [Gemini SDK](https://ai.google.dev/gemini-api/docs) · [Anthropic SDK](https://docs.anthropic.com)                                 |
+| Testing          | Vitest + Playwright + fast-check                               | [Vitest](https://vitest.dev) · [Playwright](https://playwright.dev) · [fast-check](https://fast-check.dev)                        |
+| CI/CD            | GitHub Actions → Vercel                                        | [Actions](https://docs.github.com/en/actions)                                                                                     |
+| Monitoring       | Sentry (errors + APM)                                          | [Sentry](https://docs.sentry.io)                                                                                                  |
+| Security (CI)    | CodeQL (SAST), npm audit (SCA), OWASP ZAP (DAST)               | [CodeQL](https://codeql.github.com) · [npm audit](https://docs.npmjs.com/cli/commands/npm-audit) · [ZAP](https://www.zaproxy.org) |
+| Security (local) | eslint-plugin-security (pre-commit via lint-staged)            | [plugin](https://github.com/eslint-community/eslint-plugin-security)                                                              |
+| Git hooks        | Husky + lint-staged                                            | [Husky](https://typicode.github.io/husky) · [lint-staged](https://github.com/lint-staged/lint-staged)                             |
 
 ---
 
@@ -155,7 +155,7 @@ Before every `git push`, Claude must complete these steps in order:
 | Workflow       | Trigger                       | Jobs                |
 | -------------- | ----------------------------- | ------------------- |
 | `ci.yml`       | Push to `feature/**`          | lint → test → build |
-| `security.yml` | Push to `feature/**` + weekly | CodeQL, Snyk        |
+| `security.yml` | Push to `feature/**` + weekly | CodeQL, npm audit   |
 | `deploy.yml`   | Merge to `main`               | Vercel deploy       |
 
 Branch protection enforced. Secrets in GitHub Actions + Vercel dashboard only — never committed.
@@ -175,7 +175,7 @@ Branch protection enforced. Secrets in GitHub Actions + Vercel dashboard only �
 - Parameterized queries only — no raw SQL interpolation
 - RLS + role checks on every route
 - No `dangerouslySetInnerHTML` · No stack traces to client · Sanitize input before AI calls
-- Block merge on High/Critical CodeQL or Snyk findings
+- Block merge on High/Critical CodeQL or npm audit findings
 - OWASP ZAP passive scan on every Vercel preview deploy
 - `encodeURIComponent` on **all** user-controlled values placed in URLs (including date inputs)
 - CodeQL alerts: **fix the code**, do not dismiss — dismissing signals "known issue, won't fix"
