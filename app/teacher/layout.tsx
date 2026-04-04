@@ -1,10 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 function TeacherNavbar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  }
 
   const navLinks = [
     { label: "Dashboard", href: "/teacher/dashboard" },
@@ -48,9 +54,13 @@ function TeacherNavbar() {
           >
             <span className="material-symbols-outlined text-xl">notifications</span>
           </button>
-          <div className="w-9 h-9 bg-primary-fixed rounded-full flex items-center justify-center text-primary font-bold text-sm select-none">
-            T
-          </div>
+          <button
+            onClick={handleSignOut}
+            className="text-sm font-semibold text-on-surface-variant hover:text-error transition-colors flex items-center gap-1"
+          >
+            <span className="material-symbols-outlined text-xl">logout</span>
+            <span className="hidden md:inline">Sign Out</span>
+          </button>
         </div>
       </div>
     </header>
