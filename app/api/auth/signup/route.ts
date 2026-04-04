@@ -4,13 +4,13 @@ import { signupSchema } from "@/lib/validations";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const POST = withApiHandler(async (req) => {
-  const { email, password, role } = signupSchema.parse(await req.json());
+  const { email, password, role, name } = signupSchema.parse(await req.json());
   const supabase = await createServerClient();
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { role } },
+    options: { data: { role, full_name: name ?? "" } },
   });
 
   if (error) throw error;

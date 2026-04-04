@@ -17,13 +17,16 @@ export const POST = withApiHandler(async (req: Request) => {
   });
 
   if (error || !data.session) {
-    throw errors.unauthorized("Invalid credentials");
+    throw errors.unauthorized("The Email or Password doesn't match our records.");
   }
 
   return NextResponse.json({
     session: {
       access_token: data.session.access_token,
       expires_at: data.session.expires_at,
+    },
+    user: {
+      role: data.user?.user_metadata?.role ?? "parent",
     },
   });
 });
