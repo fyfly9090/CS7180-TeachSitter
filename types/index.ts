@@ -18,6 +18,7 @@ export interface Profile {
   id: string; // uuid — matches auth.users.id
   email: string;
   role: UserRole;
+  full_name: string | null; // display name from signup — added in migration 007
   created_at: string; // ISO timestamp string from Supabase
 }
 
@@ -98,6 +99,7 @@ export type BookingResponse = Pick<
 export interface BookingWithParent extends Booking {
   parent_email: string;
   parent_display_name: string;
+  children?: { classroom: string; age: number }[];
 }
 
 // Standard API error shape — matches docs/API.md error format

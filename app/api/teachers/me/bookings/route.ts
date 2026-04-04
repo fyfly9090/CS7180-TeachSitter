@@ -9,13 +9,20 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { emailToDisplayName } from "@/lib/utils/format";
 import type { Teacher, Booking, BookingWithParent } from "@/types";
 
-function enrichBookings(bookings: Booking[], profileMap: Map<string, string>): BookingWithParent[] {
+function enrichBookings(
+  bookings: Booking[],
+  profileMap: Map<string, { email: string; full_name: string | null }>,
+  childrenMap: Map<string, { classroom: string; age: number }[]>
+): BookingWithParent[] {
   return bookings.map((b) => {
-    const email = profileMap.get(b.parent_id) ?? "";
+    const profile = profileMap.get(b.parent_id);
+    const email = profile?.email ?? "";
+    const displayName = profile?.full_name || (email ? emailToDisplayName(email) : "Parent");
     return {
       ...b,
       parent_email: email,
-      parent_display_name: email ? emailToDisplayName(email) : "Parent",
+      parent_display_name: displayName,
+      children: childrenMap.get(b.parent_id) ?? [],
     };
   });
 }
@@ -55,24 +62,51 @@ export const GET = withApiHandler(async () => {
 
   // Enrich all bookings with parent email via service client (bypasses RLS)
   const allParentIds = [...new Set(allBookings.map((b) => b.parent_id))];
-  const profileMap = new Map<string, string>();
+  const profileMap = new Map<string, { email: string; full_name: string | null }>();
 
   if (allParentIds.length > 0) {
     const serviceClient = createServiceClient();
     const { data: profiles } = await serviceClient
       .from("profiles")
-      .select("id, email")
+      .select("id, email, full_name")
       .in("id", allParentIds);
 
     if (profiles) {
-      for (const p of profiles as unknown as { id: string; email: string }[]) {
-        profileMap.set(p.id, p.email);
+      for (const p of profiles as unknown as {
+        id: string;
+        email: string;
+        full_name: string | null;
+      }[]) {
+        profileMap.set(p.id, { email: p.email, full_name: p.full_name });
+      }
+    }
+  }
+
+  // Fetch children for each parent (service client bypasses RLS)
+  const childrenMap = new Map<string, { classroom: string; age: number }[]>();
+
+  if (allParentIds.length > 0) {
+    const serviceClient = createServiceClient();
+    const { data: children } = await serviceClient
+      .from("children")
+      .select("parent_id, classroom, age")
+      .in("parent_id", allParentIds);
+
+    if (children) {
+      for (const c of children as unknown as {
+        parent_id: string;
+        classroom: string;
+        age: number;
+      }[]) {
+        const existing = childrenMap.get(c.parent_id) ?? [];
+        existing.push({ classroom: c.classroom, age: c.age });
+        childrenMap.set(c.parent_id, existing);
       }
     }
   }
 
   return NextResponse.json({
-    confirmed: enrichBookings(confirmedRaw, profileMap),
-    pending: enrichBookings(pendingRaw, profileMap),
+    confirmed: enrichBookings(confirmedRaw, profileMap, childrenMap),
+    pending: enrichBookings(pendingRaw, profileMap, childrenMap),
   });
 });
