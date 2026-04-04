@@ -36,6 +36,27 @@ const CHILDREN = [
   { id: "c2", name: "Oliver", classroom: "Butterfly", age: 3, notes: "", created_at: "2026-01-02" },
 ];
 
+const AI_TEACHERS = [
+  {
+    id: "11111111-1111-1111-1111-111111111111",
+    name: "Ms. Clara H.",
+    classroom: "Sunshine",
+    bio: "Ms. Clara is Leo's primary teacher. She's already familiar with his afternoon routine.",
+    availability: [
+      { start_date: "2026-06-16", end_date: "2026-06-20", start_time: "09:00", end_time: "17:00" },
+    ],
+  },
+  {
+    id: "22222222-2222-2222-2222-222222222222",
+    name: "Ms. Elena V.",
+    classroom: "Little Sprouts",
+    bio: "Maya responds exceptionally well to Elena during morning play.",
+    availability: [
+      { start_date: "2026-06-23", end_date: "2026-06-27", start_time: "08:00", end_time: "15:00" },
+    ],
+  },
+];
+
 const BOOKINGS = [
   {
     id: "b1",
@@ -60,9 +81,14 @@ const BOOKINGS = [
 ];
 
 function mockFetchChildren(children = CHILDREN) {
-  (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve({ children }),
+  (global.fetch as ReturnType<typeof vi.fn>).mockImplementation((url: string) => {
+    if (String(url).startsWith("/api/teachers/available")) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ teachers: [] }) });
+    }
+    if (String(url) === "/api/bookings") {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ bookings: [] }) });
+    }
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ children }) });
   });
 }
 
@@ -260,6 +286,7 @@ describe("DashboardPage — delete child", () => {
     (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: CHILDREN }) }) // GET children
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: [] }) }) // GET bookings
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ teachers: [] }) }) // GET teachers
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) }); // DELETE response
 
     render(<DashboardPage />);
@@ -282,6 +309,7 @@ describe("DashboardPage — delete child", () => {
     (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: CHILDREN }) }) // GET children
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: [] }) }) // GET bookings
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ teachers: [] }) }) // GET teachers
       .mockResolvedValueOnce({ ok: true, status: 204, json: () => Promise.resolve({}) }); // DELETE
 
     render(<DashboardPage />);
@@ -365,6 +393,7 @@ describe("DashboardPage — Add a Child modal", () => {
     (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: [] }) }) // GET children
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: [] }) }) // GET bookings
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ teachers: [] }) }) // GET teachers
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ child: newChild }) }); // POST
 
     render(<DashboardPage />);
@@ -399,6 +428,7 @@ describe("DashboardPage — Add a Child modal", () => {
     (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: [] }) }) // GET children
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: [] }) }) // GET bookings
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ teachers: [] }) }) // GET teachers
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ child: newChild }) }); // POST
 
     render(<DashboardPage />);
@@ -424,8 +454,18 @@ describe("DashboardPage — Add a Child modal", () => {
 
 describe("DashboardPage — Quick Match AI sidebar", () => {
   beforeEach(() => {
-    global.fetch = vi.fn();
-    mockFetchChildren();
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (String(url).startsWith("/api/teachers/available")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ teachers: AI_TEACHERS }),
+        });
+      }
+      if (String(url) === "/api/bookings") {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ bookings: [] }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ children: CHILDREN }) });
+    });
   });
   afterEach(() => vi.clearAllMocks());
 
@@ -434,44 +474,56 @@ describe("DashboardPage — Quick Match AI sidebar", () => {
     expect(screen.getByRole("heading", { name: /quick match ai/i })).toBeInTheDocument();
   });
 
-  it("shows teacher names in sidebar", () => {
+  it("shows teacher names in sidebar", async () => {
     render(<DashboardPage />);
-    expect(screen.getByText("Ms. Clara H.")).toBeInTheDocument();
-    expect(screen.getByText("Ms. Elena V.")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Ms. Clara H.")).toBeInTheDocument();
+      expect(screen.getByText("Ms. Elena V.")).toBeInTheDocument();
+    });
   });
 
-  it("shows Request buttons for each match", () => {
+  it("shows Request buttons for each match", async () => {
     render(<DashboardPage />);
-    expect(screen.getByRole("button", { name: /request ms\. clara/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /request ms\. elena/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /request ms\. clara/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /request ms\. elena/i })).toBeInTheDocument();
+    });
   });
 
-  it("shows View Profile buttons for each match", () => {
+  it("shows View Profile buttons for each match", async () => {
     render(<DashboardPage />);
-    const viewProfileBtns = screen.getAllByRole("button", { name: /view profile/i });
-    expect(viewProfileBtns.length).toBe(2);
+    await waitFor(() => {
+      const viewProfileBtns = screen.getAllByRole("button", { name: /view profile/i });
+      expect(viewProfileBtns.length).toBe(2);
+    });
   });
 
-  it("Request button navigates to /bookings/new with teacher_id", () => {
+  it("Request button navigates to /bookings/new with real teacher UUID", async () => {
     render(<DashboardPage />);
+    await waitFor(() => screen.getByRole("button", { name: /request ms\. clara/i }));
     fireEvent.click(screen.getByRole("button", { name: /request ms\. clara/i }));
-    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/bookings/new?teacher_id="));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringContaining(`teacher_id=${AI_TEACHERS[0].id}`)
+    );
   });
 
-  it("Request button includes teacher_name in URL", () => {
+  it("Request button includes teacher_name in URL", async () => {
     render(<DashboardPage />);
+    await waitFor(() => screen.getByRole("button", { name: /request ms\. clara/i }));
     fireEvent.click(screen.getByRole("button", { name: /request ms\. clara/i }));
     expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("teacher_name="));
   });
 
-  it("Request button includes availability in URL", () => {
+  it("Request button includes availability in URL", async () => {
     render(<DashboardPage />);
+    await waitFor(() => screen.getByRole("button", { name: /request ms\. clara/i }));
     fireEvent.click(screen.getByRole("button", { name: /request ms\. clara/i }));
     expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("availability="));
   });
 
-  it("View Profile button navigates to /search with teacher name filter", () => {
+  it("View Profile button navigates to /search with teacher name filter", async () => {
     render(<DashboardPage />);
+    await waitFor(() => screen.getAllByRole("button", { name: /view profile/i }));
     fireEvent.click(screen.getAllByRole("button", { name: /view profile/i })[0]);
     expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/search?name="));
   });
@@ -500,7 +552,8 @@ describe("DashboardPage — Active Requests", () => {
   it("shows empty state when no bookings", async () => {
     (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: [] }) })
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ teachers: [] }) });
 
     render(<DashboardPage />);
     await waitFor(() => {
@@ -511,7 +564,8 @@ describe("DashboardPage — Active Requests", () => {
   it("shows booking teacher name", async () => {
     (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: [] }) })
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: BOOKINGS }) });
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: BOOKINGS }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ teachers: [] }) });
 
     render(<DashboardPage />);
     await waitFor(() => {
@@ -522,7 +576,8 @@ describe("DashboardPage — Active Requests", () => {
   it("shows pending status badge", async () => {
     (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: [] }) })
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: BOOKINGS }) });
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: BOOKINGS }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ teachers: [] }) });
 
     render(<DashboardPage />);
     await waitFor(() => {
@@ -533,7 +588,8 @@ describe("DashboardPage — Active Requests", () => {
   it("shows confirmed status badge", async () => {
     (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ children: [] }) })
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: BOOKINGS }) });
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ bookings: BOOKINGS }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ teachers: [] }) });
 
     render(<DashboardPage />);
     await waitFor(() => {

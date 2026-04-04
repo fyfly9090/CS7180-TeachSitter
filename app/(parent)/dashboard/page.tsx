@@ -25,6 +25,22 @@ interface BookingData {
   created_at: string;
 }
 
+interface AiSuggestion {
+  teacherId: string;
+  initials: string;
+  shortName: string;
+  name: string;
+  classroom: string;
+  role: string;
+  availability: {
+    start_date: string;
+    end_date: string;
+    start_time: string | null;
+    end_time: string | null;
+  }[];
+  reasoning: string;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function formatAge(age: number): string {
@@ -442,37 +458,6 @@ function AddChildModal({ onClose, onAdd }: AddChildModalProps) {
   );
 }
 
-// ── AI sidebar data (static placeholder) ──────────────────────────────────────
-
-const aiSuggestions = [
-  {
-    teacherId: "t1",
-    initials: "CH",
-    shortName: "Ms. Clara",
-    name: "Ms. Clara H.",
-    classroom: "Sunshine",
-    role: "Sunshine Room Lead",
-    availability: [
-      { start_date: "2026-06-16", end_date: "2026-06-20", start_time: "09:00", end_time: "17:00" },
-    ],
-    reasoning:
-      "Ms. Clara is Leo's primary teacher. She's already familiar with his afternoon routine and specific snack requirements.",
-  },
-  {
-    teacherId: "t2",
-    initials: "EV",
-    shortName: "Ms. Elena",
-    name: "Ms. Elena V.",
-    classroom: "Little Sprouts",
-    role: "Little Sprouts Asst.",
-    availability: [
-      { start_date: "2026-06-23", end_date: "2026-06-27", start_time: "08:00", end_time: "15:00" },
-    ],
-    reasoning:
-      "Maya responds exceptionally well to Elena during morning play. Elena is certified in infant CPR and first aid.",
-  },
-];
-
 // ── DashboardPage ──────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -484,6 +469,7 @@ export default function DashboardPage() {
   const [children, setChildren] = useState<ChildData[]>([]);
   const [bookings, setBookings] = useState<BookingData[]>([]);
   const [editingChild, setEditingChild] = useState<ChildData | null>(null);
+  const [suggestedTeachers, setSuggestedTeachers] = useState<AiSuggestion[]>([]);
 
   useEffect(() => {
     fetch("/api/children")
@@ -500,6 +486,60 @@ export default function DashboardPage() {
       .then((data) => {
         if (data.bookings) setBookings(data.bookings);
       })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const today = new Date();
+    const future = new Date(today);
+    future.setDate(future.getDate() + 90);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    fetch(
+      `/api/teachers/available?start_date=${encodeURIComponent(fmt(today))}&end_date=${encodeURIComponent(fmt(future))}`
+    )
+      .then((r) => r.json())
+      .then(
+        (data: {
+          teachers?: Array<{
+            id: string;
+            name: string;
+            classroom: string;
+            bio?: string;
+            availability: Array<{
+              start_date: string;
+              end_date: string;
+              start_time?: string | null;
+              end_time?: string | null;
+            }>;
+          }>;
+        }) => {
+          if (!data.teachers) return;
+          setSuggestedTeachers(
+            data.teachers.slice(0, 2).map((t) => {
+              const words = (t.name ?? "").split(/\s+/).filter(Boolean);
+              const initials =
+                words.length >= 2
+                  ? (words[0][0] + words[1][0]).toUpperCase()
+                  : (t.name ?? "?").slice(0, 2).toUpperCase();
+              return {
+                teacherId: t.id,
+                initials,
+                shortName: words.slice(0, 2).join(" "),
+                name: t.name ?? "Teacher",
+                classroom: t.classroom ?? "",
+                role: `${t.classroom ?? ""} Teacher`,
+                availability: (t.availability ?? []).map((a) => ({
+                  start_date: a.start_date,
+                  end_date: a.end_date,
+                  start_time: a.start_time ?? null,
+                  end_time: a.end_time ?? null,
+                })),
+                reasoning: t.bio ?? "Available for childcare during school breaks.",
+              };
+            })
+          );
+        }
+      )
       .catch(() => {});
   }, []);
 
@@ -742,62 +782,68 @@ export default function DashboardPage() {
                   to find the perfect matches available this weekend.
                 </p>
 
-                <div className="flex flex-col gap-4">
-                  {aiSuggestions.map((teacher) => (
-                    <div
-                      key={teacher.name}
-                      className="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10"
-                    >
-                      {/* Teacher header */}
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-14 h-14 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
-                          {teacher.initials}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-on-surface">{teacher.name}</p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <span
-                              className="material-symbols-outlined text-tertiary text-[14px]"
-                              style={{ fontVariationSettings: "'FILL' 1" }}
-                            >
-                              verified
-                            </span>
-                            <span className="text-xs text-tertiary font-medium">
-                              {teacher.role}
-                            </span>
+                {suggestedTeachers.length === 0 ? (
+                  <p className="text-sm text-on-surface-variant text-center py-4">
+                    No available teachers found for the next 90 days.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {suggestedTeachers.map((teacher) => (
+                      <div
+                        key={teacher.teacherId}
+                        className="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/10"
+                      >
+                        {/* Teacher header */}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-14 h-14 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
+                            {teacher.initials}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-on-surface">{teacher.name}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span
+                                className="material-symbols-outlined text-tertiary text-[14px]"
+                                style={{ fontVariationSettings: "'FILL' 1" }}
+                              >
+                                verified
+                              </span>
+                              <span className="text-xs text-tertiary font-medium">
+                                {teacher.role}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Reasoning quote */}
-                      <p className="text-xs text-on-surface-variant italic bg-surface-container rounded-xl p-3 mb-3">
-                        &ldquo;{teacher.reasoning}&rdquo;
-                      </p>
+                        {/* Reasoning quote */}
+                        <p className="text-xs text-on-surface-variant italic bg-surface-container rounded-xl p-3 mb-3">
+                          &ldquo;{teacher.reasoning}&rdquo;
+                        </p>
 
-                      {/* Actions */}
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/bookings/new?teacher_id=${encodeURIComponent(teacher.teacherId)}&teacher_name=${encodeURIComponent(teacher.name)}&classroom=${encodeURIComponent(teacher.classroom)}&availability=${encodeURIComponent(JSON.stringify(teacher.availability))}`
-                            )
-                          }
-                          className="w-full bg-on-surface text-surface py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all"
-                        >
-                          Request {teacher.shortName}
-                        </button>
-                        <button
-                          onClick={() =>
-                            router.push(`/search?name=${encodeURIComponent(teacher.name)}`)
-                          }
-                          className="w-full border border-primary text-primary py-2.5 rounded-xl text-sm font-bold hover:bg-primary-fixed/20 transition-all"
-                        >
-                          View Profile
-                        </button>
+                        {/* Actions */}
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/bookings/new?teacher_id=${encodeURIComponent(teacher.teacherId)}&teacher_name=${encodeURIComponent(teacher.name)}&classroom=${encodeURIComponent(teacher.classroom)}&availability=${encodeURIComponent(JSON.stringify(teacher.availability))}`
+                              )
+                            }
+                            className="w-full bg-on-surface text-surface py-2.5 rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition-all"
+                          >
+                            Request {teacher.shortName}
+                          </button>
+                          <button
+                            onClick={() =>
+                              router.push(`/search?name=${encodeURIComponent(teacher.name)}`)
+                            }
+                            className="w-full border border-primary text-primary py-2.5 rounded-xl text-sm font-bold hover:bg-primary-fixed/20 transition-all"
+                          >
+                            View Profile
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
