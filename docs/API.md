@@ -9,15 +9,19 @@ All requests and responses use `application/json`. All protected routes require 
 
 ## Routes
 
-| Method | Route                     | Auth    | Description                                                  |
-| ------ | ------------------------- | ------- | ------------------------------------------------------------ |
-| POST   | `/api/auth/signup`        | Public  | Register with email + password                               |
-| POST   | `/api/auth/login`         | Public  | Sign in with email + password                                |
-| GET    | `/api/teachers/available` | Parent  | Search available teachers by date + classroom (Redis-cached) |
-| POST   | `/api/match`              | Parent  | AI ranking of available teachers                             |
-| POST   | `/api/bookings`           | Parent  | Create a booking request                                     |
-| PATCH  | `/api/bookings/[id]`      | Teacher | Confirm or decline a booking                                 |
-| GET    | `/api/evals`              | Admin   | Retrieve historical match eval metrics                       |
+| Method | Route                                        | Auth    | Description                                                  |
+| ------ | -------------------------------------------- | ------- | ------------------------------------------------------------ |
+| POST   | `/api/auth/signup`                           | Public  | Register with email + password                               |
+| POST   | `/api/auth/login`                            | Public  | Sign in with email + password                                |
+| GET    | `/api/teachers/available`                    | Parent  | Search available teachers by date + classroom (Redis-cached) |
+| GET    | `/api/teachers/[id]`                         | Auth    | Fetch teacher profile + availability                         |
+| PATCH  | `/api/teachers/[id]`                         | Teacher | Update teacher profile (classroom, bio, expertise)           |
+| POST   | `/api/teachers/[id]/availability`            | Teacher | Add an availability block                                    |
+| DELETE | `/api/teachers/[id]/availability/[avail_id]` | Teacher | Remove an availability block                                 |
+| POST   | `/api/match`                                 | Parent  | AI ranking of available teachers                             |
+| POST   | `/api/bookings`                              | Parent  | Create a booking request                                     |
+| PATCH  | `/api/bookings/[id]`                         | Teacher | Confirm or decline a booking                                 |
+| GET    | `/api/evals`                                 | Admin   | Retrieve historical match eval metrics                       |
 
 ---
 
@@ -102,6 +106,102 @@ Search for available teachers. Results are Redis-cached per query key.
 ```
 
 **Errors:** `400` missing required params · `401` unauthenticated
+
+---
+
+### `GET /api/teachers/[id]`
+
+Fetch a teacher's profile and availability. Any authenticated user can call this endpoint. RLS automatically filters availability: parents see unbooked slots only; the owning teacher sees all their slots.
+
+**Response `200`**
+
+```json
+{
+  "teacher": {
+    "id": "uuid",
+    "classroom": "Sunflower",
+    "bio": "5 years experience...",
+    "full_name": "Ms. Tara Smith"
+  },
+  "availability": [
+    {
+      "id": "uuid",
+      "start_date": "2026-06-16",
+      "end_date": "2026-06-20",
+      "start_time": null,
+      "end_time": null,
+      "is_booked": false
+    }
+  ]
+}
+```
+
+**Errors:** `400` invalid ID format · `401` unauthenticated · `404` teacher not found
+
+---
+
+### `PATCH /api/teachers/[id]`
+
+Teacher updates their own profile. Ownership verified.
+
+**Request**
+
+```json
+{
+  "classroom": "Sunflower Room",
+  "bio": "5 years experience with preschoolers.",
+  "expertise": ["Art & Crafts", "STEM Activities"]
+}
+```
+
+**Response `200`**
+
+```json
+{ "teacher": { "id": "uuid", "classroom": "Sunflower Room", "bio": "..." } }
+```
+
+**Errors:** `400` invalid input · `401` unauthenticated · `403` not teacher / not owner · `404` teacher not found
+
+---
+
+### `POST /api/teachers/[id]/availability`
+
+Add a single availability block for the teacher. Teacher role + ownership required.
+
+**Request**
+
+```json
+{ "start_date": "2026-06-16", "end_date": "2026-06-20" }
+```
+
+**Response `201`**
+
+```json
+{
+  "availability": {
+    "id": "uuid",
+    "teacher_id": "uuid",
+    "start_date": "2026-06-16",
+    "end_date": "2026-06-20",
+    "start_time": null,
+    "end_time": null,
+    "is_booked": false,
+    "created_at": "2026-06-01T10:00:00Z"
+  }
+}
+```
+
+**Errors:** `400` invalid input · `401` unauthenticated · `403` not teacher / not owner · `404` teacher not found
+
+---
+
+### `DELETE /api/teachers/[id]/availability/[avail_id]`
+
+Remove a single availability block. Cannot delete booked blocks (returns 409).
+
+**Response `204`** — no body on success
+
+**Errors:** `400` invalid ID format · `401` unauthenticated · `403` not teacher / not owner · `404` availability not found · `409` availability is booked
 
 ---
 

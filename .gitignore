@@ -22,8 +22,6 @@ yarn-error.log*
 .DS_Store
 *.pem
 
-# Claude Code local config
-.claude/
 
 # TypeScript
 *.tsbuildinfo

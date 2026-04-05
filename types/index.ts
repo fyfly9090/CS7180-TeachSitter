@@ -18,6 +18,7 @@ export interface Profile {
   id: string; // uuid — matches auth.users.id
   email: string;
   role: UserRole;
+  full_name: string | null; // display name from signup — added in migration 007
   created_at: string; // ISO timestamp string from Supabase
 }
 
@@ -26,6 +27,7 @@ export interface Teacher {
   user_id: string; // FK → profiles.id
   classroom: string;
   bio: string;
+  expertise?: string[]; // e.g. ["Art & Crafts", "STEM Activities"] — added in migration 006; optional since not all queries select it
   hourly_rate: number | null; // e.g. 45.00 — null if not set
   full_name: string | null; // e.g. "Ms. Tara Smith" — null if migration 005 not applied
   position: string | null; // e.g. "Preschool Teacher" — null if migration 005 not applied
@@ -95,6 +97,13 @@ export type BookingResponse = Pick<
   "id" | "parent_id" | "teacher_id" | "start_date" | "end_date" | "status"
 >;
 
+// Booking enriched with parent info — used by GET /api/teachers/me/bookings
+export interface BookingWithParent extends Booking {
+  parent_email: string;
+  parent_display_name: string;
+  children?: { classroom: string; age: number }[];
+}
+
 // Standard API error shape — matches docs/API.md error format
 export interface ApiError {
   error: {
@@ -127,7 +136,14 @@ export interface Database {
       teachers: {
         Row: DbRow<Teacher>;
         Insert: DbRow<Omit<Teacher, "id" | "created_at">>;
-        Update: DbRow<Partial<Omit<Teacher, "id" | "user_id" | "created_at">>>;
+        Update: DbRow<
+          Partial<
+            Pick<
+              Teacher,
+              "classroom" | "bio" | "expertise" | "hourly_rate" | "full_name" | "position"
+            >
+          >
+        >;
         Relationships: [];
       };
       availability: {

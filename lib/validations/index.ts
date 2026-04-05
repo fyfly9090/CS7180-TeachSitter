@@ -3,6 +3,7 @@
 // ZodError thrown by .parse() is caught and serialized by withApiHandler in lib/errors.ts.
 
 import { z } from "zod";
+import { ALL_EXPERTISE } from "@/lib/utils/expertise";
 
 // =====================
 // Shared Primitives
@@ -51,6 +52,7 @@ export const signupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["parent", "teacher"]),
+  name: z.string().max(200).optional(),
 });
 export type SignupInput = z.infer<typeof signupSchema>;
 
@@ -152,26 +154,38 @@ export const createChildSchema = z.object({
 export type CreateChildInput = z.infer<typeof createChildSchema>;
 
 // =====================
-// Teacher Profile Update — PATCH /api/teachers/[id]
+// Evals Query — GET /api/evals
+// z.coerce.number() converts URL string params to numbers before validation.
 // =====================
 
+// =====================
+// Teacher Profile Update — PATCH /api/teachers/[id]
+// bio capped at 2000 chars: same sanitization guard as matchRequestSchema.
+// expertise is an enum array capped at 6 (one per allowed value).
+// availability replaces existing unbooked rows when present.
+// =====================
+
+export const availabilityBlockSchema = z
+  .object({
+    start_date: dateString,
+    end_date: dateString,
+  })
+  .superRefine(dateRangeRefinement);
+export type AvailabilityBlockInput = z.infer<typeof availabilityBlockSchema>;
+
 export const updateTeacherProfileSchema = z.object({
-  classroom: z.string().min(1).max(100).optional(),
+  classroom: z.string().min(1, "Classroom name is required").max(100),
   bio: z.string().max(2000).optional(),
-  expertise: z.array(z.string().max(100)).optional(),
-  availability: z
-    .array(
-      z.object({ start_date: dateString, end_date: dateString }).superRefine(dateRangeRefinement)
-    )
-    .optional(),
+  expertise: z.array(z.enum(ALL_EXPERTISE)).max(6).optional(),
+  availability: z.array(availabilityBlockSchema).optional(),
 });
 export type UpdateTeacherProfileInput = z.infer<typeof updateTeacherProfileSchema>;
 
 // =====================
-// Shared — UUID path param
+// UUID Path Param — validates dynamic route [id] segments
 // =====================
 
-export const uuidParamSchema = z.string().uuid("Invalid ID");
+export const uuidParamSchema = z.string().uuid("Invalid ID format");
 
 // =====================
 // Evals Query — GET /api/evals

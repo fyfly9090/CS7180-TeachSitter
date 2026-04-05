@@ -2,15 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ALL_EXPERTISE, toggleExpertise } from "@/lib/utils/expertise";
+import type { Availability, Teacher } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 interface AvailabilityBlock {
-  id: number;
-  label: string;
+  // db id — undefined for newly added (unsaved) blocks
+  dbId?: string;
+  // local key for React rendering
+  localId: number;
   from: string;
   to: string;
 }
@@ -112,69 +116,141 @@ function MobileBottomNav() {
 }
 
 // ---------------------------------------------------------------------------
-// Static data
-// ---------------------------------------------------------------------------
-
-const ALL_EXPERTISE = [
-  "Art & Crafts",
-  "Outdoor Play",
-  "STEM Activities",
-  "Music & Dance",
-  "Storytelling",
-  "Social Skills",
-];
-
-const initialAvailability: AvailabilityBlock[] = [
-  { id: 1, label: "Break Period 1", from: "2026-06-16", to: "2026-06-20" },
-  { id: 2, label: "Break Period 2", from: "2026-08-04", to: "2026-08-22" },
-];
-
-// ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
 
-export default function TeacherSetupPage() {
-  const [classroom, setClassroom] = useState("Sunflower Room");
-  const [bio, setBio] = useState("");
-  const [selectedExpertise, setSelectedExpertise] = useState<string[]>([
-    "Art & Crafts",
-    "Storytelling",
-  ]);
-  const [availability, setAvailability] = useState<AvailabilityBlock[]>(initialAvailability);
-  const [nextBlockId, setNextBlockId] = useState(3);
-  const [saved, setSaved] = useState(false);
+let _nextLocalId = 1;
+function nextLocalId() {
+  return _nextLocalId++;
+}
 
-  function toggleExpertise(tag: string) {
-    setSelectedExpertise((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+export default function TeacherSetupPage() {
+  const [teacherId, setTeacherId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string>("Teacher");
+  const [classroom, setClassroom] = useState("");
+  const [bio, setBio] = useState("");
+  const [selectedExpertise, setSelectedExpertise] = useState<string[]>([]);
+  const [availability, setAvailability] = useState<AvailabilityBlock[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+
+  // Load existing profile on mount
+  useEffect(() => {
+    fetch("/api/teachers/me")
+      .then(async (res) => {
+        if (!res.ok) {
+          // 404 = new teacher with no profile yet (normal); other errors = unexpected
+          if (res.status !== 404) {
+            setLoadError("Unable to load your profile. Some information may be missing.");
+          }
+          return;
+        }
+        const data = (await res.json()) as { teacher?: Teacher; availability?: Availability[] };
+        if (data.teacher) {
+          setTeacherId(data.teacher.id);
+          setDisplayName(data.teacher.full_name ?? "Teacher");
+          setClassroom(data.teacher.classroom ?? "");
+          setBio(data.teacher.bio ?? "");
+          setSelectedExpertise(data.teacher.expertise ?? []);
+        }
+        if (data.availability) {
+          setAvailability(
+            data.availability.map((a) => ({
+              dbId: a.id,
+              localId: nextLocalId(),
+              from: a.start_date,
+              to: a.end_date,
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        setLoadError("Unable to load your profile. Some information may be missing.");
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  function handleToggleExpertise(tag: string) {
+    setSelectedExpertise((prev) => toggleExpertise(prev, tag));
   }
 
   function addAvailabilityBlock() {
-    const blockNumber = nextBlockId;
-    setAvailability((prev) => [
-      ...prev,
-      {
-        id: blockNumber,
-        label: `Break Period ${blockNumber}`,
-        from: "",
-        to: "",
-      },
-    ]);
-    setNextBlockId((n) => n + 1);
+    setAvailability((prev) => [...prev, { localId: nextLocalId(), from: "", to: "" }]);
   }
 
-  function removeAvailabilityBlock(id: number) {
-    setAvailability((prev) => prev.filter((b) => b.id !== id));
+  function removeAvailabilityBlock(localId: number) {
+    setAvailability((prev) => prev.filter((b) => b.localId !== localId));
   }
 
-  function updateBlockDate(id: number, field: "from" | "to", value: string) {
-    setAvailability((prev) => prev.map((b) => (b.id === id ? { ...b, [field]: value } : b)));
+  function updateBlockDate(localId: number, field: "from" | "to", value: string) {
+    setAvailability((prev) =>
+      prev.map((b) => (b.localId === localId ? { ...b, [field]: value } : b))
+    );
   }
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  async function handleSave() {
+    setFieldError(null);
+    setAvailabilityError(null);
+    setError(null);
+
+    if (!classroom.trim()) {
+      setFieldError("Classroom name is required");
+      return;
+    }
+
+    if (availability.length === 0) {
+      setAvailabilityError("At least one availability block is required");
+      return;
+    }
+
+    for (const block of availability) {
+      if (!block.from || !block.to) {
+        setAvailabilityError("Each availability block must have both a start and end date");
+        return;
+      }
+      // YYYY-MM-DD strings are lexicographically ordered, so string comparison is correct for ISO dates
+      if (block.to < block.from) {
+        setAvailabilityError("End date must be on or after start date");
+        return;
+      }
+    }
+
+    if (!teacherId) {
+      setError("Profile not found — please refresh the page and try again.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/teachers/${teacherId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classroom: classroom.trim(),
+          bio: bio.trim() || undefined,
+          expertise: selectedExpertise,
+          availability: availability.map((b) => ({ start_date: b.from, end_date: b.to })),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: { message?: string } };
+        setError(data.error?.message ?? "Something went wrong. Please try again.");
+        return;
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -190,200 +266,236 @@ export default function TeacherSetupPage() {
             Manage your profile and availability to attract the right families.
           </p>
 
-          {/* Main grid */}
-          <div className="grid lg:grid-cols-12 gap-8 mt-8">
-            {/* Left — Profile form */}
-            <div className="lg:col-span-7">
-              <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm mb-6">
-                {/* Photo upload section */}
-                <div className="flex items-center gap-5 mb-6">
-                  <div className="relative flex-shrink-0">
-                    <div className="w-24 h-24 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-3xl select-none">
-                      T
-                    </div>
-                    <button
-                      aria-label="Upload photo"
-                      className="absolute bottom-0 right-0 w-8 h-8 bg-secondary rounded-full flex items-center justify-center cursor-pointer shadow-md hover:opacity-90 transition-opacity"
-                    >
-                      <span className="material-symbols-outlined text-on-secondary text-sm leading-none">
-                        camera_alt
-                      </span>
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <p className="text-lg font-bold text-on-surface">Ms. Tara Smith</p>
-                    <div className="flex items-center gap-1 text-sm text-on-surface-variant">
-                      <span className="material-symbols-outlined text-base leading-none">
-                        school
-                      </span>
-                      Sunflower Room · Maple Grove Preschool
-                    </div>
-                    <div className="flex items-center gap-1 bg-primary-fixed text-primary text-xs font-bold px-3 py-1 rounded-full w-fit">
-                      <span className="material-symbols-outlined text-sm leading-none">
-                        verified
-                      </span>
-                      Verified Teacher
-                    </div>
-                  </div>
-                </div>
-
-                {/* Classroom Name */}
-                <div className="mb-4">
-                  <label
-                    htmlFor="classroom"
-                    className="block text-sm font-semibold text-on-surface-variant mb-1.5"
-                  >
-                    Classroom Name
-                  </label>
-                  <input
-                    id="classroom"
-                    type="text"
-                    value={classroom}
-                    onChange={(e) => setClassroom(e.target.value)}
-                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-
-                {/* About You */}
-                <div className="mb-4">
-                  <label
-                    htmlFor="bio"
-                    className="block text-sm font-semibold text-on-surface-variant mb-1.5"
-                  >
-                    About You
-                  </label>
-                  <textarea
-                    id="bio"
-                    rows={4}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="Tell parents about your teaching style, experience, and what makes you great with kids..."
-                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-colors resize-none"
-                  />
-                </div>
-
-                {/* Areas of Expertise */}
-                <div className="mb-2">
-                  <p className="text-sm font-semibold text-on-surface-variant mb-2">
-                    Areas of Expertise
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {ALL_EXPERTISE.map((tag) => {
-                      const isSelected = selectedExpertise.includes(tag);
-                      return (
-                        <button
-                          key={tag}
-                          onClick={() => toggleExpertise(tag)}
-                          className={`rounded-full px-4 py-1.5 text-sm font-semibold cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-primary text-on-primary"
-                              : "bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest"
-                          }`}
-                        >
-                          {tag}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Save button */}
-                <button
-                  onClick={handleSave}
-                  className="w-full mt-6 bg-gradient-to-br from-primary to-primary-container text-on-primary py-3.5 rounded-xl font-bold text-base shadow-md hover:opacity-90 active:scale-95 transition-all"
-                >
-                  {saved ? "Saved!" : "Save Profile"}
-                </button>
-              </div>
+          {loading ? (
+            <div className="mt-12 flex justify-center">
+              <span className="material-symbols-outlined text-4xl text-outline animate-spin">
+                progress_activity
+              </span>
             </div>
+          ) : (
+            <>
+              {loadError && (
+                <div className="flex items-center gap-2 bg-error-container/20 border border-error/20 rounded-xl px-4 py-3 mt-6">
+                  <span className="material-symbols-outlined text-error text-[18px]">
+                    error_outline
+                  </span>
+                  <p className="text-sm text-error">{loadError}</p>
+                </div>
+              )}
+              <div className="grid lg:grid-cols-12 gap-8 mt-8">
+                {/* Left — Profile form */}
+                <div className="lg:col-span-7">
+                  <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm mb-6">
+                    {/* Photo upload section */}
+                    <div className="flex items-center gap-5 mb-6">
+                      <div className="relative flex-shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src="/placeholder-avatar.png"
+                          alt="Profile photo"
+                          className="w-24 h-24 rounded-full object-cover"
+                        />
+                        <div className="absolute bottom-0 right-0 w-8 h-8 bg-secondary rounded-full flex items-center justify-center shadow-md">
+                          <span className="material-symbols-outlined text-on-secondary text-sm leading-none">
+                            camera_alt
+                          </span>
+                        </div>
+                      </div>
 
-            {/* Right — Availability + Tip */}
-            <div className="lg:col-span-5">
-              <div className="sticky top-24">
-                {/* Availability card */}
-                <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm mb-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-base font-bold text-on-surface">My Availability</h2>
+                      <div className="flex flex-col gap-1.5">
+                        <p className="text-lg font-bold text-on-surface">{displayName}</p>
+                        <div className="flex items-center gap-1 text-sm text-on-surface-variant">
+                          <span className="material-symbols-outlined text-base leading-none">
+                            school
+                          </span>
+                          {classroom || "No classroom set"}
+                        </div>
+                        <div className="flex items-center gap-1 bg-primary-fixed text-primary text-xs font-bold px-3 py-1 rounded-full w-fit">
+                          <span className="material-symbols-outlined text-sm leading-none">
+                            verified
+                          </span>
+                          Verified Teacher
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Classroom Name */}
+                    <div className="mb-4">
+                      <label
+                        htmlFor="classroom"
+                        className="block text-sm font-semibold text-on-surface-variant mb-1.5"
+                      >
+                        Classroom Name
+                      </label>
+                      <input
+                        id="classroom"
+                        type="text"
+                        value={classroom}
+                        onChange={(e) => setClassroom(e.target.value)}
+                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-colors"
+                      />
+                      {fieldError && <p className="text-xs text-error mt-1">{fieldError}</p>}
+                    </div>
+
+                    {/* About You */}
+                    <div className="mb-4">
+                      <label
+                        htmlFor="bio"
+                        className="block text-sm font-semibold text-on-surface-variant mb-1.5"
+                      >
+                        About You
+                      </label>
+                      <textarea
+                        id="bio"
+                        rows={4}
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Tell parents about your teaching style, experience, and what makes you great with kids..."
+                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary transition-colors resize-none"
+                      />
+                    </div>
+
+                    {/* Areas of Expertise */}
+                    <div className="mb-2">
+                      <p className="text-sm font-semibold text-on-surface-variant mb-2">
+                        Areas of Expertise
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {ALL_EXPERTISE.map((tag) => {
+                          const isSelected = selectedExpertise.includes(tag);
+                          return (
+                            <button
+                              key={tag}
+                              onClick={() => handleToggleExpertise(tag)}
+                              className={`rounded-full px-4 py-1.5 text-sm font-semibold cursor-pointer transition-all ${
+                                isSelected
+                                  ? "bg-primary text-on-primary"
+                                  : "bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest"
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* API error */}
+                    {error && (
+                      <div className="flex items-center gap-2 bg-error-container/20 border border-error/20 rounded-xl px-4 py-3 mt-4">
+                        <span className="material-symbols-outlined text-error text-[18px]">
+                          error_outline
+                        </span>
+                        <p className="text-sm text-error">{error}</p>
+                      </div>
+                    )}
+
+                    {/* Save button */}
                     <button
-                      onClick={addAvailabilityBlock}
-                      aria-label="Add availability block"
-                      className="text-primary hover:opacity-80 transition-opacity"
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="w-full mt-6 bg-gradient-to-br from-primary to-primary-container text-on-primary py-3.5 rounded-xl font-bold text-base shadow-md hover:opacity-90 active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
                     >
-                      <span className="material-symbols-outlined text-2xl leading-none">
-                        add_circle
-                      </span>
+                      {saved ? "Saved!" : saving ? "Saving…" : "Save Profile"}
                     </button>
                   </div>
+                </div>
 
-                  <div className="flex flex-col gap-4">
-                    {availability.map((block) => (
-                      <div
-                        key={block.id}
-                        className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/15"
-                      >
-                        <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-3">
-                          {block.label}
-                        </p>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-semibold text-on-surface-variant mb-1">
-                              From
-                            </label>
-                            <input
-                              type="date"
-                              value={block.from}
-                              onChange={(e) => updateBlockDate(block.id, "from", e.target.value)}
-                              className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-on-surface-variant mb-1">
-                              To
-                            </label>
-                            <input
-                              type="date"
-                              value={block.to}
-                              onChange={(e) => updateBlockDate(block.id, "to", e.target.value)}
-                              className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"
-                            />
-                          </div>
-                        </div>
+                {/* Right — Availability + Tip */}
+                <div className="lg:col-span-5">
+                  <div className="sticky top-24">
+                    {/* Availability card */}
+                    <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/20 shadow-sm mb-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-base font-bold text-on-surface">My Availability</h2>
                         <button
-                          onClick={() => removeAvailabilityBlock(block.id)}
-                          className="text-xs text-outline hover:text-error mt-2 transition-colors"
+                          onClick={addAvailabilityBlock}
+                          aria-label="Add availability block"
+                          className="text-primary hover:opacity-80 transition-opacity"
                         >
-                          Remove
+                          <span className="material-symbols-outlined text-2xl leading-none">
+                            add_circle
+                          </span>
                         </button>
                       </div>
-                    ))}
 
-                    {availability.length === 0 && (
-                      <p className="text-sm text-on-surface-variant text-center py-4">
-                        No availability added yet.
-                      </p>
-                    )}
-                  </div>
-                </div>
+                      <div className="flex flex-col gap-4">
+                        {availability.map((block, idx) => (
+                          <div
+                            key={block.localId}
+                            className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/15"
+                          >
+                            <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-3">
+                              Break Period {idx + 1}
+                            </p>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-semibold text-on-surface-variant mb-1">
+                                  From
+                                </label>
+                                <input
+                                  type="date"
+                                  value={block.from}
+                                  onChange={(e) =>
+                                    updateBlockDate(block.localId, "from", e.target.value)
+                                  }
+                                  className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-on-surface-variant mb-1">
+                                  To
+                                </label>
+                                <input
+                                  type="date"
+                                  value={block.to}
+                                  onChange={(e) =>
+                                    updateBlockDate(block.localId, "to", e.target.value)
+                                  }
+                                  className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"
+                                />
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeAvailabilityBlock(block.localId)}
+                              className="text-xs text-outline hover:text-error mt-2 transition-colors"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
 
-                {/* Teacher's Tip */}
-                <div className="bg-primary-fixed/40 rounded-2xl p-4 border border-primary-fixed">
-                  <div className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-primary text-xl flex-shrink-0">
-                      lightbulb
-                    </span>
-                    <div>
-                      <p className="text-sm font-bold text-primary">Teacher&apos;s Tip</p>
-                      <p className="text-sm text-on-surface-variant mt-0.5">
-                        Teachers with complete profiles and clear availability get 3× more booking
-                        requests.
-                      </p>
+                        {availability.length === 0 && (
+                          <p className="text-sm text-on-surface-variant text-center py-4">
+                            No availability added yet.
+                          </p>
+                        )}
+                      </div>
+                      {availabilityError && (
+                        <p className="text-xs text-error mt-2">{availabilityError}</p>
+                      )}
+                    </div>
+
+                    {/* Teacher&apos;s Tip */}
+                    <div className="bg-primary-fixed/40 rounded-2xl p-4 border border-primary-fixed">
+                      <div className="flex items-start gap-3">
+                        <span className="material-symbols-outlined text-primary text-xl flex-shrink-0">
+                          lightbulb
+                        </span>
+                        <div>
+                          <p className="text-sm font-bold text-primary">Teacher&apos;s Tip</p>
+                          <p className="text-sm text-on-surface-variant mt-0.5">
+                            Teachers with complete profiles and clear availability get 3× more
+                            booking requests.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </main>
     </>

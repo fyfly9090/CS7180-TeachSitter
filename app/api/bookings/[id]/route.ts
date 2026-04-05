@@ -34,18 +34,36 @@ export const PATCH = withApiHandler(async (req: Request, ctx: unknown) => {
 
     if (teacherError || !teacher) throw errors.notFound("Teacher profile");
 
-    // Fetch the booking
+    // Fetch the booking (include dates for availability side-effect)
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
-      .select("id, teacher_id, status")
+      .select("id, teacher_id, status, start_date, end_date")
       .eq("id", id)
       .single();
 
     if (bookingError || !booking) throw errors.notFound("Booking");
 
+    const typedBooking = booking as {
+      id: string;
+      teacher_id: string;
+      status: string;
+      start_date: string;
+      end_date: string;
+    };
+    const typedTeacher = teacher as { id: string };
+
     // Verify ownership
-    if ((booking as { teacher_id: string }).teacher_id !== (teacher as { id: string }).id) {
+    if (typedBooking.teacher_id !== typedTeacher.id) {
       throw errors.forbidden();
+    }
+
+    // Pending bookings can be confirmed or declined
+    // Confirmed bookings can be declined (cancelled by teacher)
+    if (typedBooking.status === "declined") {
+      throw errors.conflict("Booking is already declined");
+    }
+    if (typedBooking.status === "confirmed" && status === "confirmed") {
+      throw errors.conflict("Booking is already confirmed");
     }
 
     // Update status
@@ -57,6 +75,26 @@ export const PATCH = withApiHandler(async (req: Request, ctx: unknown) => {
       .single();
 
     if (updateError || !updated) throw errors.internal();
+
+    // Side effect: mark availability as booked when confirmed
+    if (status === "confirmed") {
+      await supabase
+        .from("availability")
+        .update({ is_booked: true })
+        .eq("teacher_id", typedBooking.teacher_id)
+        .lte("start_date", typedBooking.start_date)
+        .gte("end_date", typedBooking.end_date);
+    }
+
+    // Side effect: release availability when cancelling a confirmed booking
+    if (status === "declined" && typedBooking.status === "confirmed") {
+      await supabase
+        .from("availability")
+        .update({ is_booked: false })
+        .eq("teacher_id", typedBooking.teacher_id)
+        .lte("start_date", typedBooking.start_date)
+        .gte("end_date", typedBooking.end_date);
+    }
 
     return NextResponse.json({ booking: updated });
   }
@@ -123,7 +161,7 @@ export const DELETE = withApiHandler(async (_req: Request, ctx: unknown) => {
   if (!user) throw errors.unauthorized();
   if (user.user_metadata.role !== "parent") throw errors.forbidden();
 
-  // Fetch the booking
+  // Fetch the booking (include dates for availability side-effect)
   const { data: booking, error: bookingError } = await supabase
     .from("bookings")
     .select("id, parent_id, status")
