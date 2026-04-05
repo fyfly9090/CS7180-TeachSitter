@@ -11,6 +11,18 @@ import { z } from "zod";
 
 const uuidSchema = z.string().uuid("Invalid teacher ID");
 
+interface TeacherRow {
+  id: string;
+  user_id: string;
+  classroom: string;
+  bio: string;
+  hourly_rate: number | null;
+  full_name: string | null;
+  position: string | null;
+  created_at: string;
+  profiles: { email: string };
+}
+
 export const GET = withApiHandler(async (_req: Request, ctx: unknown) => {
   const { params } = ctx as { params: Promise<{ id: string }> };
   const { id } = await params;
@@ -38,8 +50,10 @@ export const GET = withApiHandler(async (_req: Request, ctx: unknown) => {
 
   if (teacherError || !teacher) throw errors.notFound("Teacher");
 
+  const row = teacher as unknown as TeacherRow;
+
   // Fetch availability (unbooked only for parents; all for the owning teacher)
-  const isOwner = teacher.user_id === user.id;
+  const isOwner = row.user_id === user.id;
   let availQuery = service
     .from("availability")
     .select("id, start_date, end_date, start_time, end_time, is_booked, created_at")
@@ -50,16 +64,14 @@ export const GET = withApiHandler(async (_req: Request, ctx: unknown) => {
   const { data: availability, error: availError } = await availQuery;
   if (availError) throw errors.internal();
 
-  const row = teacher as typeof teacher & { profiles: { email: string } };
-
   return NextResponse.json({
     teacher: {
       id: row.id,
       classroom: row.classroom,
       bio: row.bio,
-      hourly_rate: (row as { hourly_rate?: number | null }).hourly_rate ?? null,
-      full_name: (row as { full_name?: string | null }).full_name ?? null,
-      position: (row as { position?: string | null }).position ?? null,
+      hourly_rate: row.hourly_rate,
+      full_name: row.full_name,
+      position: row.position,
       name: row.profiles.email,
     },
     availability: availability ?? [],
