@@ -8,7 +8,24 @@ import { NextResponse } from "next/server";
 import { withApiHandler, errors } from "@/lib/errors";
 import { updateTeacherProfileSchema, uuidParamSchema } from "@/lib/validations";
 import { createServerClient } from "@/lib/supabase/server";
-import type { Teacher, Availability } from "@/types";
+import { createServiceClient } from "@/lib/supabase/service";
+import type { Teacher } from "@/types";
+
+// ---------------------------------------------------------------------------
+// Shared shape for the teachers + profiles join used in GET
+// ---------------------------------------------------------------------------
+
+interface TeacherRow {
+  id: string;
+  user_id: string;
+  classroom: string;
+  bio: string;
+  hourly_rate: number | null;
+  full_name: string | null;
+  position: string | null;
+  created_at: string;
+  profiles: { email: string };
+}
 
 // ---------------------------------------------------------------------------
 // GET /api/teachers/[id]
@@ -25,25 +42,43 @@ export const GET = withApiHandler(async (_req: Request, ctx: unknown) => {
 
   if (!user) throw errors.unauthorized();
 
-  const { data: teacher, error: teacherError } = await supabase
+  // Use service client so the profiles!inner join is not blocked by RLS
+  const service = createServiceClient();
+  const { data: teacher, error: teacherError } = await service
     .from("teachers")
-    .select("*")
+    .select(
+      "id, user_id, classroom, bio, hourly_rate, full_name, position, created_at, profiles!inner(email)"
+    )
     .eq("id", id)
     .single();
 
   if (teacherError || !teacher) throw errors.notFound("Teacher profile");
 
-  const { data: availability, error: availError } = await supabase
+  const row = teacher as unknown as TeacherRow;
+
+  // Parents see only unbooked slots; the owning teacher sees all
+  const isOwner = row.user_id === user.id;
+  let availQuery = service
     .from("availability")
     .select("id, teacher_id, start_date, end_date, start_time, end_time, is_booked, created_at")
     .eq("teacher_id", id)
     .order("start_date", { ascending: true });
+  if (!isOwner) availQuery = availQuery.eq("is_booked", false);
 
+  const { data: availability, error: availError } = await availQuery;
   if (availError) throw errors.internal();
 
   return NextResponse.json({
-    teacher: teacher as unknown as Teacher,
-    availability: (availability ?? []) as unknown as Availability[],
+    teacher: {
+      id: row.id,
+      classroom: row.classroom,
+      bio: row.bio,
+      hourly_rate: row.hourly_rate,
+      full_name: row.full_name,
+      position: row.position,
+      name: row.profiles.email,
+    },
+    availability: availability ?? [],
   });
 });
 

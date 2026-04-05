@@ -62,8 +62,17 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Public routes — always pass through
+  // Public routes — redirect authenticated users from "/" to their dashboard
   if (isPublicRoute(pathname)) {
+    if (user && pathname === "/") {
+      const role = user.user_metadata.role as UserRole;
+      const dest = role === "teacher" ? "/teacher/dashboard" : "/dashboard";
+      const redirectResponse = NextResponse.redirect(new URL(dest, request.url));
+      supabaseResponse.cookies
+        .getAll()
+        .forEach(({ name, value }) => redirectResponse.cookies.set(name, value));
+      return redirectResponse;
+    }
     return supabaseResponse;
   }
 

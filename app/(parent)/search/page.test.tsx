@@ -146,9 +146,9 @@ describe("SearchClient — teacher cards", () => {
     expect(screen.getAllByText("Verified")).toHaveLength(2);
   });
 
-  it("renders View Profile button on each card", () => {
+  it("renders View Profile link on each card", () => {
     render(<SearchClient {...DEFAULT_PROPS} />);
-    expect(screen.getAllByRole("button", { name: /view profile/i })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: /view profile/i })).toHaveLength(2);
   });
 });
 

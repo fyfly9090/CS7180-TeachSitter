@@ -48,8 +48,10 @@ export interface Availability {
 export interface Child {
   id: string;
   parent_id: string;
+  name: string;
   classroom: string;
   age: number;
+  notes: string;
   created_at: string;
 }
 
@@ -153,7 +155,7 @@ export interface Database {
       children: {
         Row: DbRow<Child>;
         Insert: DbRow<Omit<Child, "id" | "created_at">>;
-        Update: DbRow<Partial<Pick<Child, "classroom" | "age">>>;
+        Update: DbRow<Partial<Pick<Child, "name" | "classroom" | "age" | "notes">>>;
         Relationships: [];
       };
       bookings: {

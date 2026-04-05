@@ -14,11 +14,16 @@ vi.mock("../lib/supabase/server", () => ({
   createServerClient: vi.fn(),
 }));
 
+vi.mock("../lib/supabase/service", () => ({
+  createServiceClient: vi.fn(),
+}));
+
 // ---------------------------------------------------------------------------
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
 import { createServerClient } from "../lib/supabase/server";
+import { createServiceClient } from "../lib/supabase/service";
 
 // Route handlers are imported lazily inside each describe block to avoid
 // issues with the GET export not existing yet during RED phase.
@@ -46,6 +51,7 @@ const TEACHER_ROW = {
   full_name: "Ms. Tara Smith",
   position: "Preschool Teacher",
   created_at: "2026-01-01T00:00:00Z",
+  profiles: { email: "ms.tara@teachsitter.dev" },
 };
 
 const AVAIL_ROWS = [
@@ -96,15 +102,24 @@ function makeChain(finalResult: { data: unknown; error: unknown }): MockChain {
 
 function mockSupabase(user: object | null, fromResults: Array<{ data: unknown; error: unknown }>) {
   let callIndex = 0;
+  const makeFrom = () =>
+    vi.fn().mockImplementation(() => {
+      const result = fromResults[callIndex] ?? { data: null, error: null };
+      callIndex++;
+      return makeChain(result);
+    });
+
+  // Server client: auth only (GET uses service client for DB; PATCH/POST/DELETE use server client)
   vi.mocked(createServerClient).mockResolvedValue({
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }),
     },
-    from: vi.fn().mockImplementation(() => {
-      const result = fromResults[callIndex] ?? { data: null, error: null };
-      callIndex++;
-      return makeChain(result);
-    }),
+    from: makeFrom(),
+  } as never);
+
+  // Service client: used by GET for the profiles join
+  vi.mocked(createServiceClient).mockReturnValue({
+    from: makeFrom(),
   } as never);
 }
 

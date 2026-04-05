@@ -13,6 +13,10 @@ vi.mock("../lib/supabase/server", () => ({
   createServerClient: vi.fn(),
 }));
 
+vi.mock("../lib/supabase/service", () => ({
+  createServiceClient: vi.fn(),
+}));
+
 // ---------------------------------------------------------------------------
 // Imports
 // ---------------------------------------------------------------------------
