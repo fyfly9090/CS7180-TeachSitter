@@ -23,7 +23,7 @@ export const GET = withApiHandler(async (req: Request) => {
 
   const { data, error, count } = await supabase
     .from("match_evals")
-    .select("*", { count: "exact" })
+    .select("id, parent_id, ranked_teachers, judge_score, created_at", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
