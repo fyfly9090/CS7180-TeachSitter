@@ -152,6 +152,28 @@ export const createChildSchema = z.object({
 export type CreateChildInput = z.infer<typeof createChildSchema>;
 
 // =====================
+// Teacher Profile Update — PATCH /api/teachers/[id]
+// =====================
+
+export const updateTeacherProfileSchema = z.object({
+  classroom: z.string().min(1).max(100).optional(),
+  bio: z.string().max(2000).optional(),
+  expertise: z.array(z.string().max(100)).optional(),
+  availability: z
+    .array(
+      z.object({ start_date: dateString, end_date: dateString }).superRefine(dateRangeRefinement)
+    )
+    .optional(),
+});
+export type UpdateTeacherProfileInput = z.infer<typeof updateTeacherProfileSchema>;
+
+// =====================
+// Shared — UUID path param
+// =====================
+
+export const uuidParamSchema = z.string().uuid("Invalid ID");
+
+// =====================
 // Evals Query — GET /api/evals
 // z.coerce.number() converts URL string params to numbers before validation.
 // =====================
