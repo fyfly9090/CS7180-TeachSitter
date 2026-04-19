@@ -41,7 +41,7 @@
 
 **Yun:**
 
-> On signup, teachers land on the setup page — classroom name like "Sunflower Room," a short bio, expertise tags, and date ranges they're available.
+> On signup, teachers land on the setup page — classroom name like "Green Room," a short bio, expertise tags, and date ranges they're available.
 
 **[Show setup page → fill form → save]**
 
@@ -63,9 +63,9 @@
 
 **[Navigate to search → enter dates → show results]**
 
-> Clicking "AI Match" runs Gemini 1.5 Pro to rank teachers, prioritizing classroom familiarity — if the child is in Sunflower Room, Sunflower teachers rank highest. Each result has a reasoning explanation.
+> As soon as the results come back, the app fires off `/api/match` automatically in the background — no button, no extra click. Gemini 1.5 Pro scores each teacher with classroom familiarity as the primary signal: if the child is in Sunflower Room, Sunflower teachers rank highest. The ranking lands on the page as two visible artifacts on every card — a `#1 Match` / `#2 Match` badge in the top-right of the teacher's photo, and an "AI Match Reasoning" box under the bio explaining why.
 
-**[Click AI match → show ranked results with reasoning]**
+**[Point out the #1 Match / #2 Match badges on the photos and the AI Match Reasoning boxes under each bio]**
 
 > From here, the parent opens a teacher's profile and sends a booking request with a personal message. The request goes to "pending" — and once the teacher confirms, it flips to "confirmed."
 

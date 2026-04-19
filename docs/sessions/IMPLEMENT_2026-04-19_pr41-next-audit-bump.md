@@ -38,3 +38,17 @@ User chose to bundle the real fix into PR #41 rather than open a separate PR.
 - Confirm CI green on the new head SHA.
 - Merge PR #41.
 - Follow-up: open a separate PR to bump `@anthropic-ai/sdk` 0.79 → 0.90 with verification against `lib/ai/gemini.ts` and `lib/ai/match.ts` (known breaking; was explicitly scoped out of #42).
+
+## Addendum — demo-script.md accuracy fix
+
+User ran through the demo manually and flagged two inaccuracies in `docs/demo-script.md` Section 2c (parent flow):
+
+1. Script said _"Clicking 'AI Match'"_ — there is no button. AI ranking auto-triggers via `useEffect` in `SearchClient.tsx:369-430` once `parentId`, both dates, and at least one teacher are present.
+2. Script claimed an _"AI is ranking your matches…"_ banner would be visible. In practice the fetch resolves too fast for the banner to be noticed in a demo (especially when Gemini falls back to the deterministic `matchTeachers()`).
+
+What _is_ reliably visible post-fetch (confirmed by user):
+
+- `#1 Match` / `#2 Match` badge in the top-right corner of each teacher photo (`SearchClient.tsx:241-256`)
+- "AI Match Reasoning" box under each bio (`SearchClient.tsx:287-305`)
+
+Rewrote the Section 2c narration + stage directions to describe those two durable artifacts only.
